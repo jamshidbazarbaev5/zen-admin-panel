@@ -5,21 +5,21 @@ import axios, {
   type AxiosResponse,
 } from "axios";
 import { refreshToken } from "./auth";
-import { useErrorStore, parseErrorMessage } from "../store/errorStore";
+import { useErrorStore, parseErrorMessage } from '../store/errorStore';
 
 // Constants
 
-const getBaseURL = (): string => {
-  const hostname = window.location.hostname;
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'https://test2.smart-sawda.uz/api/v1/';
-  }
-  return `https://${hostname}/api/v1/`;
-};
+// const getBaseURL = (): string => {
+//   const hostname = window.location.hostname;
+//   if (hostname === 'localhost' || hostname === '127.0.0.1') {
+//     return 'https://test2.smart-sawda.uz/api/v1/';
+//   }
+//   return `https://${hostname}/api/v1/`;
+// };
 
 // Create API instance
 const api: AxiosInstance = axios.create({
-  baseURL: getBaseURL(),
+  baseURL: 'https://zen-coffee.uz/api/admin/',
   headers: {
     "Content-Type": "application/json",
   },

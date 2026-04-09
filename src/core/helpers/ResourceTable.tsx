@@ -20,7 +20,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { t } from "i18next";
-import { DeleteConfirmationModal } from "../components/modals/DeleteConfirmationModal";
+import { DeleteConfirmationModal } from '../components/modals/DeleteConfirmationModal'
 
 interface Column<T> {
   header: string;

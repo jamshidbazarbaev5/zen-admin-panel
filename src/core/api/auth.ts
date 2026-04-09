@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useErrorStore, parseErrorMessage } from '../store/errorStore';
+import { useErrorStore, parseErrorMessage } from '../store/errorStore'
 
 // Types
 interface LoginCredentials {
@@ -8,22 +8,35 @@ interface LoginCredentials {
   password: string;
 }
 
-interface TokenResponse {
+export interface User {
+  id: number;
+  username: string;
+  is_superuser: boolean;
+  name?: string;
+  phone_number?: string;
+  role?: string;
+  has_active_shift?: boolean;
+  is_mobile_user?: boolean;
+  can_view_quantity?: boolean;
+  store_read?: {
+    name: string;
+    address: string;
+  };
+}
+
+export interface TokenResponse {
   access: string;
   refresh: string;
+  user: User;
 }
 
 // Constants
 const getBaseURL = (): string => {
-  const hostname = window.location.hostname;
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'https://test2.smart-sawda.uz/api/v1/';
-  }
-  return `https://${hostname}/api/v1/`;
+  return 'https://zen-coffee.uz/api/admin/';
 };
-const TOKEN_ENDPOINT = 'token/';
-const REFRESH_ENDPOINT = 'token/refresh/';
-const VERIFY_ENDPOINT = 'token/verify/';
+const TOKEN_ENDPOINT = 'auth/login/';
+const REFRESH_ENDPOINT = 'auth/refresh/';
+const VERIFY_ENDPOINT = 'auth/verify/';
 
 // Local storage keys
 const ACCESS_TOKEN_KEY = 'access_token';
@@ -50,9 +63,11 @@ authApi.interceptors.response.use(
 // Helper functions
 const getAccessToken = (): string | null => localStorage.getItem(ACCESS_TOKEN_KEY);
 const getRefreshToken = (): string | null => localStorage.getItem(REFRESH_TOKEN_KEY);
-const setTokens = (access: string, refresh: string): void => {
+const setTokens = (access: string, refresh?: string): void => {
   localStorage.setItem(ACCESS_TOKEN_KEY, access);
-  localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+  if (refresh) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+  }
 };
 const clearTokens = (): void => {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
@@ -64,7 +79,10 @@ export { getAccessToken };
 
 // Auth functions
 export const login = async (credentials: LoginCredentials): Promise<TokenResponse> => {
-  const response = await authApi.post<TokenResponse>(TOKEN_ENDPOINT, credentials);
+  const response = await authApi.post<TokenResponse>(TOKEN_ENDPOINT, {
+    username: credentials.phone_number,
+    password: credentials.password,
+  });
   setTokens(response.data.access, response.data.refresh);
   return response.data;
 };

@@ -6,7 +6,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '../../components/ui/form';
+} from '../../components/ui/form'
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
@@ -108,27 +108,32 @@ export function ResourceForm<T extends Record<string, any>>({
   const { setValue } = form;
 
   return (
-    <div className="space-y-6">
-      {title && <h2 className="text-xl font-bold">{title}</h2>}
+    <div>
+      {title && <h2 className="text-xl font-bold mb-4">{title}</h2>}
       
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-1">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-5">
             {fields.map((field) => !field.hidden && (
-              <div key={field.name} className="space-y-4">
+              <div key={field.name} className={field.type === 'textarea' ? 'lg:col-span-2' : ''}>
                 <FormField
                   control={form.control}
                   name={field.name}
                   render={({ field: formField }) => (
-                    <FormItem>
-                      {field.type !== 'checkbox' && <FormLabel>{field.label}</FormLabel>}
+                    <FormItem className="space-y-2">
+                      {field.type !== 'checkbox' && (
+                        <FormLabel className="text-sm font-medium text-gray-900">
+                          {field.label}
+                        </FormLabel>
+                      )}
                       <FormControl>
                         {field.type === 'textarea' ? (
                           <Textarea
                             placeholder={field.placeholder}
                             {...formField}
                             readOnly={field.readOnly}
-                            className={field.readOnly ? 'bg-gray-100 dark:bg-gray-800' : ''}
+                            className={`min-h-[80px] ${field.readOnly ? 'bg-gray-100' : ''}`}
+                            rows={3}
                           />
                         ) : field.type === 'select' ? (
                           <>
@@ -142,7 +147,7 @@ export function ResourceForm<T extends Record<string, any>>({
                               value={formField.value !== undefined && formField.value !== null ? formField.value.toString() : undefined}
                               defaultValue={field.defaultValue !== undefined ? field.defaultValue.toString() : undefined}
                             >
-                              <SelectTrigger className={field.readOnly ? 'bg-gray-100 dark:bg-gray-800' : ''}>
+                              <SelectTrigger className={field.readOnly ? 'bg-gray-100' : ''}>
                                 <SelectValue placeholder={field.placeholder || t('placeholders.select')} />
                               </SelectTrigger>
                               <SelectContent>
@@ -297,10 +302,10 @@ export function ResourceForm<T extends Record<string, any>>({
                             placeholder={field.placeholder}
                             {...formField}
                             readOnly={field.readOnly}
-                            className={field.readOnly ? 'bg-gray-100 dark:bg-gray-800' : ''}
+                            className={field.readOnly ? 'bg-muted' : ''}
                           />
                         ) : field.type === 'checkbox' ? (
-                          <div className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                          <div className="flex items-center space-x-3 p-3.5 border border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors">
                             <Checkbox
                               checked={formField.value || false}
                               onCheckedChange={(checked) => {
@@ -312,7 +317,7 @@ export function ResourceForm<T extends Record<string, any>>({
                               disabled={field.readOnly}
                               className="h-5 w-5"
                             />
-                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-gray-900 dark:text-gray-100">
+                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-gray-900">
                               {field.label}
                             </label>
                           </div>
@@ -322,7 +327,7 @@ export function ResourceForm<T extends Record<string, any>>({
                             placeholder={field.placeholder}
                             {...formField}
                             readOnly={field.readOnly}
-                            className={field.readOnly ? 'bg-gray-100 dark:bg-gray-800' : ''}
+                            className={field.readOnly ? 'bg-gray-100' : ''}
                           />
                         ) : (
                           <Input
@@ -331,7 +336,7 @@ export function ResourceForm<T extends Record<string, any>>({
                             {...formField}
                             readOnly={field.readOnly}
                             disabled={field.disabled}
-                            className={field.readOnly || field.disabled ? 'bg-gray-100 dark:bg-gray-800' : ''}
+                            className={field.readOnly || field.disabled ? 'bg-gray-100' : ''}
                             onChange={field.onChange
                               ? (e) => {
                                   const formatted = field.onChange!(e.target.value);
@@ -347,12 +352,12 @@ export function ResourceForm<T extends Record<string, any>>({
                         )}
                       </FormControl>
                       {field.description && (
-                        <p className="text-sm text-muted-foreground dark:text-gray-400 mt-1">{field.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{field.description}</p>
                       )}
                       {field.helperText && (
-                        <p className="text-sm text-muted-foreground dark:text-gray-400 mt-1">{field.helperText}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{field.helperText}</p>
                       )}
-                      <FormMessage />
+                      <FormMessage className="text-xs" />
                     </FormItem>
                   )}
                 />
@@ -362,9 +367,13 @@ export function ResourceForm<T extends Record<string, any>>({
           
           {children}
           
-          <div className="col-span-full mt-6">
+          <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-200">
             {!hideSubmitButton && (
-              <Button type="submit" disabled={isSubmitting} className="w-full md:w-auto">
+              <Button 
+                type="submit" 
+                disabled={isSubmitting} 
+                className="min-w-[140px] h-10 bg-blue-600 hover:bg-blue-700 text-white"
+              >
                 {isSubmitting ? t("common.sending") : t("common.submit")}
               </Button>
             )}
