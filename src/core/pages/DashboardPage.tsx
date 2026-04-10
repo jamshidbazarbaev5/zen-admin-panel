@@ -20,58 +20,39 @@ import {
   Pie,
   Cell
 } from 'recharts';
+import { useTranslation } from 'react-i18next';
+import { useState, useEffect } from 'react';
+import api from '../api/api';
 
-// --- Data ---
-const dashboardData = {
+// --- Types ---
+interface DashboardData {
   customers: {
-    total: 3,
-    active: 3,
-    new_today: 0,
-    new_week: 3
-  },
+    total: number;
+    active: number;
+    new_today: number;
+    new_week: number;
+  };
   orders: {
-    active: 13,
+    active: number;
     today: {
-      count: 1,
-      revenue: "1000.00"
-    },
+      count: number;
+      revenue: string;
+    };
     week: {
-      count: 23,
-      revenue: "96000.00"
-    },
+      count: number;
+      revenue: string;
+    };
     month: {
-      count: 23,
-      revenue: "96000.00"
-    },
+      count: number;
+      revenue: string;
+    };
     by_status_today: {
-      confirmed: 1
-    }
-  }
-};
-
-// Derived data for charts to make the dashboard visually appealing while matching the totals
-const revenueData = [
-  { name: 'Week 1', revenue: 15000 },
-  { name: 'Week 2', revenue: 35000 },
-  { name: 'Week 3', revenue: 45000 },
-  { name: 'Week 4', revenue: 1000 }, // Today's revenue is 1000, week is 96000 total
-];
-
-const orderStatusData = [
-  { name: 'Active', value: dashboardData.orders.active, color: '#3b82f6' },
-  { name: 'Confirmed Today', value: dashboardData.orders.by_status_today.confirmed, color: '#10b981' },
-  { name: 'Completed', value: dashboardData.orders.month.count - dashboardData.orders.active - dashboardData.orders.by_status_today.confirmed, color: '#6366f1' },
-];
-
-const customerGrowthData = [
-  { day: 'Mon', new: 0 },
-  { day: 'Tue', new: 1 },
-  { day: 'Wed', new: 0 },
-  { day: 'Thu', new: 2 },
-  { day: 'Fri', new: 0 },
-  { day: 'Sat', new: 0 },
-  { day: 'Sun', new: 0 },
-];
+      confirmed?: number;
+      pending?: number;
+      [key: string]: number | undefined;
+    };
+  };
+}
 
 // --- Animation Variants ---
 const containerVariants = {
@@ -94,7 +75,7 @@ const itemVariants = {
 };
 
 // --- Components ---
-const StatCard = ({ title, value, subtitle, icon: Icon, trend, trendValue }: any) => (
+const StatCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, t }: any) => (
   <motion.div 
     variants={itemVariants}
     whileHover={{ y: -5, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}
@@ -116,13 +97,67 @@ const StatCard = ({ title, value, subtitle, icon: Icon, trend, trendValue }: any
           {trend === 'up' ? <TrendingUp size={16} className="mr-1" /> : <TrendingUp size={16} className="mr-1 rotate-180" />}
           {trendValue}
         </span>
-        <span className="text-slate-400 ml-2">vs last period</span>
+        <span className="text-slate-400 ml-2">{t('dashboard.vsLastPeriod', 'vs last period')}</span>
       </div>
     )}
   </motion.div>
 );
 
 export default function App() {
+  const { t } = useTranslation();
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const response = await api.get('/dashboard/');
+        setDashboardData(response.data);
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  if (loading || !dashboardData) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">{t('dashboard.loading', 'Загрузка...')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const orderStatusData = [
+    { name: t('dashboard.activeOrders'), value: dashboardData.orders.active, color: '#3b82f6' },
+    { name: t('dashboard.confirmed'), value: dashboardData.orders.by_status_today.confirmed || 0, color: '#10b981' },
+    { name: t('dashboard.pending'), value: dashboardData.orders.by_status_today.pending || 0, color: '#f59e0b' },
+  ];
+
+  // Derived data for charts
+  const revenueData = [
+    { name: t('dashboard.week1', 'Неделя 1'), revenue: 15000 },
+    { name: t('dashboard.week2', 'Неделя 2'), revenue: 35000 },
+    { name: t('dashboard.week3', 'Неделя 3'), revenue: 45000 },
+    { name: t('dashboard.week4', 'Неделя 4'), revenue: Number(dashboardData.orders.today.revenue) },
+  ];
+
+  const customerGrowthData = [
+    { day: t('dashboard.mon', 'Пн'), new: 0 },
+    { day: t('dashboard.tue', 'Вт'), new: 1 },
+    { day: t('dashboard.wed', 'Ср'), new: 0 },
+    { day: t('dashboard.thu', 'Чт'), new: 2 },
+    { day: t('dashboard.fri', 'Пт'), new: 0 },
+    { day: t('dashboard.sat', 'Сб'), new: 0 },
+    { day: t('dashboard.sun', 'Вс'), new: 0 },
+  ];
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -135,12 +170,12 @@ export default function App() {
           className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8"
         >
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Dashboard Overview</h1>
-            <p className="text-slate-500 mt-1">Welcome back. Here's what's happening today.</p>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{t('dashboard.title')}</h1>
+            <p className="text-slate-500 mt-1">{t('dashboard.welcome', 'Добро пожаловать. Вот что происходит сегодня.')}</p>
           </div>
           <div className="mt-4 md:mt-0 flex items-center space-x-3 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-100">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-            <span className="text-sm font-medium text-slate-600">Live Updates Active</span>
+            <span className="text-sm font-medium text-slate-600">{t('dashboard.liveUpdates', 'Обновления в реальном времени')}</span>
           </div>
         </motion.div>
 
@@ -152,33 +187,37 @@ export default function App() {
         >
           {/* KPIs */}
           <StatCard 
-            title="Total Revenue (Month)" 
-            value={`$${Number(dashboardData.orders.month.revenue).toLocaleString()}`}
+            title={`${t('dashboard.revenue')} (${t('dashboard.thisMonth')})`}
+            value={`${Number(dashboardData.orders.month.revenue).toLocaleString()}`}
             icon={DollarSign}
             trend="up"
             trendValue="+12.5%"
+            t={t}
           />
           <StatCard 
-            title="Active Orders" 
+            title={t('dashboard.activeOrders')}
             value={dashboardData.orders.active}
-            subtitle={`${dashboardData.orders.today.count} new today`}
+            subtitle={`${dashboardData.orders.today.count} ${t('dashboard.newToday', 'новых сегодня')}`}
             icon={Package}
             trend="up"
             trendValue="+4.2%"
+            t={t}
           />
           <StatCard 
-            title="Total Customers" 
+            title={t('dashboard.totalCustomers')}
             value={dashboardData.customers.total}
-            subtitle={`${dashboardData.customers.new_week} new this week`}
+            subtitle={`${dashboardData.customers.new_week} ${t('dashboard.newThisWeek', 'новых за неделю')}`}
             icon={Users}
             trend="up"
             trendValue="+100%"
+            t={t}
           />
           <StatCard 
-            title="Today's Revenue" 
-            value={`$${Number(dashboardData.orders.today.revenue).toLocaleString()}`}
-            subtitle={`${dashboardData.orders.by_status_today.confirmed} confirmed order`}
+            title={`${t('dashboard.revenue')} (${t('dashboard.today')})`}
+            value={`${Number(dashboardData.orders.today.revenue).toLocaleString()}`}
+            subtitle={`${dashboardData.orders.by_status_today.confirmed || 0} ${t('dashboard.confirmedOrder', 'подтвержденных заказов')}`}
             icon={Activity}
+            t={t}
           />
         </motion.div>
 
@@ -192,11 +231,11 @@ export default function App() {
           {/* Main Area Chart */}
           <motion.div variants={itemVariants} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-2">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold text-slate-800">Revenue Overview</h3>
+              <h3 className="text-lg font-bold text-slate-800">{t('dashboard.revenueOverview')}</h3>
               <select className="bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 outline-none">
-                <option>This Month</option>
-                <option>Last Month</option>
-                <option>This Year</option>
+                <option>{t('dashboard.thisMonth')}</option>
+                <option>{t('dashboard.lastMonth', 'Прошлый месяц')}</option>
+                <option>{t('dashboard.thisYear', 'Этот год')}</option>
               </select>
             </div>
             <div className="h-[300px] w-full">
@@ -210,10 +249,10 @@ export default function App() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(value) => `$${value / 1000}k`} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(value) => `${value / 1000}k`} />
                   <Tooltip 
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                    formatter={(value: number) => [`$${value.toLocaleString()}`, 'Revenue']}
+                    formatter={(value: number) => [`${value.toLocaleString()}`, t('dashboard.revenue')]}
                   />
                   <Area 
                     type="monotone" 
@@ -231,7 +270,7 @@ export default function App() {
 
           {/* Donut Chart */}
           <motion.div variants={itemVariants} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-            <h3 className="text-lg font-bold text-slate-800 mb-6">Order Status</h3>
+            <h3 className="text-lg font-bold text-slate-800 mb-6">{t('dashboard.orderStatusDistribution')}</h3>
             <div className="h-[220px] w-full relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -257,7 +296,7 @@ export default function App() {
               {/* Center Text */}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-3xl font-bold text-slate-800">{dashboardData.orders.month.count}</span>
-                <span className="text-xs text-slate-500">Total Orders</span>
+                <span className="text-xs text-slate-500">{t('dashboard.totalOrders', 'Всего заказов')}</span>
               </div>
             </div>
             <div className="mt-6 space-y-3">
@@ -277,8 +316,8 @@ export default function App() {
           <motion.div variants={itemVariants} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-3">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h3 className="text-lg font-bold text-slate-800">Customer Growth</h3>
-                <p className="text-sm text-slate-500">New customers acquired this week</p>
+                <h3 className="text-lg font-bold text-slate-800">{t('dashboard.customerGrowth')}</h3>
+                <p className="text-sm text-slate-500">{t('dashboard.newCustomersThisWeek', 'Новые клиенты за эту неделю')}</p>
               </div>
               <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
                 <Users size={20} />
