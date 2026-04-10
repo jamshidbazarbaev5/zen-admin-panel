@@ -8,6 +8,11 @@ import {
   Users,
   ShoppingBag,
   FolderTree,
+  Settings,
+  ShoppingCart,
+  CreditCard,
+  Award,
+  Radio,
   type LucideIcon,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -174,10 +179,40 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       href: "/products",
     },
     {
+      icon: Settings,
+      label: "Группы модификаторов",
+      href: "/modifier-groups",
+    },
+    {
+      icon: ShoppingCart,
+      label: "Заказы",
+      href: "/orders",
+    },
+    {
+      icon: CreditCard,
+      label: "Платежи",
+      href: "/payments",
+    },
+    {
+      icon: Award,
+      label: "Уровни кэшбэка",
+      href: "/cashback-tiers",
+    },
+    {
       icon: Users,
       label: "Клиенты",
       href: "/customers",
     },
+    {
+      icon: Radio,
+      label: "Рассылки",
+      href: "/broadcasts",
+    },
+    // {
+    //   icon: Settings,
+    //   label: "Настройки",
+    //   href: "/settings",
+    // },
   ];
 
   return (

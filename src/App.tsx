@@ -9,6 +9,12 @@ import DashboardPage from './core/pages/DashboardPage';
 import CategoriesPage from './core/pages/CategoriesPage';
 import CustomersPage from './core/pages/CustomersPage';
 import ProductsPage from './core/pages/ProductsPage';
+import ModifierGroupsPage from './core/pages/ModifierGroupsPage';
+import OrdersPage from './core/pages/OrdersPage';
+import PaymentsPage from './core/pages/PaymentsPage';
+import CashbackTiersPage from './core/pages/CashbackTiersPage';
+import BroadcastsPage from './core/pages/BroadcastsPage';
+import SettingsPage from './core/pages/SettingsPage';
 import { Toaster } from 'sonner';
 import './App.css';
 
@@ -73,6 +79,54 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <ProductsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/modifier-groups"
+                  element={
+                    <ProtectedRoute>
+                      <ModifierGroupsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/orders"
+                  element={
+                    <ProtectedRoute>
+                      <OrdersPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/payments"
+                  element={
+                    <ProtectedRoute>
+                      <PaymentsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/cashback-tiers"
+                  element={
+                    <ProtectedRoute>
+                      <CashbackTiersPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/broadcasts"
+                  element={
+                    <ProtectedRoute>
+                      <BroadcastsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <SettingsPage />
                     </ProtectedRoute>
                   }
                 />
