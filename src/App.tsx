@@ -14,7 +14,10 @@ import OrdersPage from './core/pages/OrdersPage';
 import PaymentsPage from './core/pages/PaymentsPage';
 import CashbackTiersPage from './core/pages/CashbackTiersPage';
 import BroadcastsPage from './core/pages/BroadcastsPage';
-import SettingsPage from './core/pages/SettingsPage';
+import OrganizationsPage from './core/pages/OrganizationsPage';
+import TerminalGroupsPage from './core/pages/TerminalGroupsPage';
+import PaymentTypesPage from './core/pages/PaymentTypesPage';
+// import SettingsPage from './core/pages/SettingsPage';
 import { Toaster } from 'sonner';
 import './App.css';
 
@@ -123,10 +126,26 @@ function App() {
                   }
                 />
                 <Route
-                  path="/settings"
+                  path="/organizations"
                   element={
                     <ProtectedRoute>
-                      <SettingsPage />
+                      <OrganizationsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/terminal-groups"
+                  element={
+                    <ProtectedRoute>
+                      <TerminalGroupsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/payment-types"
+                  element={
+                    <ProtectedRoute>
+                      <PaymentTypesPage />
                     </ProtectedRoute>
                   }
                 />

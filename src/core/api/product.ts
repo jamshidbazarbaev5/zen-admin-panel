@@ -1,4 +1,6 @@
 import { createResourceApiHooks } from '../helpers/createResourceApi';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import api from './api';
 
 export interface Product {
   id?: number;
@@ -28,6 +30,13 @@ export interface ProductResponse {
   results: Product[];
 }
 
+export interface ProductBulkUpdate {
+  id: number;
+  order: number;
+  is_available: boolean;
+  prep_minutes: number;
+}
+
 const PRODUCT_URL = '/products/';
 
 export const {
@@ -37,3 +46,17 @@ export const {
   useUpdateResource: useUpdateProduct,
   useDeleteResource: useDeleteProduct,
 } = createResourceApiHooks<Product, ProductResponse>(PRODUCT_URL, 'products');
+
+export const useBulkUpdateProducts = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (updates: ProductBulkUpdate[]) => {
+      const response = await api.post(`${PRODUCT_URL}bulk-update/`, updates);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+  });
+};

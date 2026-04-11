@@ -1,4 +1,6 @@
 import { createResourceApiHooks } from '../helpers/createResourceApi';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import api from './api';
 
 export interface Category {
   id?: number;
@@ -20,6 +22,13 @@ export interface CategoryResponse {
   results: Category[];
 }
 
+export interface CategoryBulkUpdate {
+  id: number;
+  order: number;
+  is_active: boolean;
+  prep_minutes: number;
+}
+
 const CATEGORY_URL = '/categories/';
 
 export const {
@@ -29,3 +38,17 @@ export const {
   useUpdateResource: useUpdateCategory,
   useDeleteResource: useDeleteCategory,
 } = createResourceApiHooks<Category, CategoryResponse>(CATEGORY_URL, 'categories');
+
+export const useBulkUpdateCategories = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (updates: CategoryBulkUpdate[]) => {
+      const response = await api.post(`${CATEGORY_URL}bulk-update/`, updates);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+    },
+  });
+};

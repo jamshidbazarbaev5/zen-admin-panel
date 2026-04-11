@@ -1,13 +1,20 @@
 import { useState, useEffect } from 'react';
 import { ResourceTable } from '../helpers/ResourceTable';
 import { ResourceForm } from '../helpers/ResourceForm';
-import { useGetProducts, useUpdateProduct, type Product } from '../api/product';
+import { useGetProducts, useUpdateProduct, useBulkUpdateProducts, type Product, type ProductBulkUpdate } from '../api/product';
 import { useGetCategories } from '../api/category';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
+import { Button } from '../../components/ui/button';
+import { Checkbox } from '../../components/ui/checkbox';
 import { toast } from 'sonner';
+import { Save } from 'lucide-react';
 
-const columns = [
+const createColumns = (
+  editMode: boolean,
+  editedData: Map<number, Partial<Product>>,
+  onFieldChange: (id: number, field: keyof Product, value: any) => void
+) => [
   {
     header: 'Название (RU)',
     accessorKey: 'name_ru',
@@ -24,16 +31,54 @@ const columns = [
   {
     header: 'Время приготовления',
     accessorKey: 'prep_minutes',
-    cell: (row: Product) => row.prep_minutes ? `${row.prep_minutes} мин` : '-',
+    cell: (row: Product) => {
+      if (!editMode) return row.prep_minutes ? `${row.prep_minutes} мин` : '-';
+      const edited = editedData.get(row.id!);
+      return (
+        <Input
+          type="number"
+          value={edited?.prep_minutes ?? row.prep_minutes ?? ''}
+          onChange={(e) => onFieldChange(row.id!, 'prep_minutes', parseInt(e.target.value) || null)}
+          className="w-20"
+        />
+      );
+    },
+  },
+  {
+    header: 'Порядок',
+    accessorKey: 'order',
+    cell: (row: Product) => {
+      if (!editMode) return row.order;
+      const edited = editedData.get(row.id!);
+      return (
+        <Input
+          type="number"
+          value={edited?.order ?? row.order}
+          onChange={(e) => onFieldChange(row.id!, 'order', parseInt(e.target.value))}
+          className="w-20"
+        />
+      );
+    },
   },
   {
     header: 'Доступность',
     accessorKey: 'is_available',
-    cell: (row: Product) => (
-      <span className={`px-2 py-1 rounded text-xs ${row.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-        {row.is_available ? 'Доступен' : 'Недоступен'}
-      </span>
-    ),
+    cell: (row: Product) => {
+      if (!editMode) {
+        return (
+          <span className={`px-2 py-1 rounded text-xs ${row.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            {row.is_available ? 'Доступен' : 'Недоступен'}
+          </span>
+        );
+      }
+      const edited = editedData.get(row.id!);
+      return (
+        <Checkbox
+          checked={edited?.is_available ?? row.is_available}
+          onCheckedChange={(checked) => onFieldChange(row.id!, 'is_available', checked)}
+        />
+      );
+    },
   },
 ];
 
@@ -44,6 +89,8 @@ export default function ProductsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editedData, setEditedData] = useState<Map<number, Partial<Product>>>(new Map());
 
   const params: Record<string, any> = { page: currentPage };
   if (searchTerm) params.search = searchTerm;
@@ -55,6 +102,7 @@ export default function ProductsPage() {
   const categoriesParams: Record<string, any> = {};
   const { data: categoriesData } = useGetCategories({ params: categoriesParams });
   const updateProduct = useUpdateProduct();
+  const bulkUpdate = useBulkUpdateProducts();
 
   useEffect(() => {
     setCurrentPage(1);
@@ -63,6 +111,38 @@ export default function ProductsPage() {
   const products = productsData?.results || [];
   const totalCount = productsData?.count || 0;
   const categories = categoriesData?.results || [];
+
+  const handleFieldChange = (id: number, field: keyof Product, value: any) => {
+    setEditedData(prev => {
+      const newMap = new Map(prev);
+      const existing = newMap.get(id) || {};
+      newMap.set(id, { ...existing, [field]: value });
+      return newMap;
+    });
+  };
+
+  const handleBulkSave = () => {
+    const updates: ProductBulkUpdate[] = Array.from(editedData.entries()).map(([id, changes]) => {
+      const original = products.find(p => p.id === id)!;
+      return {
+        id,
+        order: changes.order ?? original.order,
+        is_available: changes.is_available ?? original.is_available,
+        prep_minutes: changes.prep_minutes ?? original.prep_minutes ?? 0,
+      };
+    });
+
+    bulkUpdate.mutate(updates, {
+      onSuccess: () => {
+        toast.success('Продукты успешно обновлены');
+        setEditMode(false);
+        setEditedData(new Map());
+      },
+      onError: () => {
+        toast.error('Ошибка при обновлении продуктов');
+      },
+    });
+  };
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
@@ -170,10 +250,32 @@ export default function ProductsPage() {
     },
   ];
 
+  const columns = createColumns(editMode, editedData, handleFieldChange);
+
   return (
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Продукты</h1>
+        <div className="flex gap-2">
+          {editMode ? (
+            <>
+              <Button variant="outline" onClick={() => {
+                setEditMode(false);
+                setEditedData(new Map());
+              }}>
+                Отмена
+              </Button>
+              <Button onClick={handleBulkSave} disabled={editedData.size === 0 || bulkUpdate.isPending}>
+                <Save className="h-4 w-4 mr-2" />
+                Сохранить изменения
+              </Button>
+            </>
+          ) : (
+            <Button onClick={() => setEditMode(true)}>
+              Редактировать таблицу
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="mb-4 flex gap-4">
@@ -183,11 +285,13 @@ export default function ProductsPage() {
           className="flex-1"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          disabled={editMode}
         />
         <select
           className="p-2 border rounded"
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
+          disabled={editMode}
         >
           <option value="">Все категории</option>
           {categories.map((cat: any) => (
@@ -200,6 +304,7 @@ export default function ProductsPage() {
           className="p-2 border rounded"
           value={isAvailableFilter}
           onChange={(e) => setIsAvailableFilter(e.target.value)}
+          disabled={editMode}
         >
           <option value="">Все статусы</option>
           <option value="true">Доступные</option>
@@ -211,7 +316,7 @@ export default function ProductsPage() {
         data={products}
         columns={columns}
         isLoading={isLoading}
-        onEdit={handleEdit}
+        onEdit={editMode ? undefined : handleEdit}
         totalCount={totalCount}
         pageSize={20}
         currentPage={currentPage}

@@ -13,6 +13,9 @@ import {
   CreditCard,
   Award,
   Radio,
+  Building2,
+  Monitor,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -207,6 +210,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       icon: Radio,
       label: "Рассылки",
       href: "/broadcasts",
+    },
+    {
+      icon: Building2,
+      label: "Организации",
+      href: "/organizations",
+    },
+    {
+      icon: Monitor,
+      label: "Терминальные группы",
+      href: "/terminal-groups",
+    },
+    {
+      icon: Wallet,
+      label: "Типы оплаты",
+      href: "/payment-types",
     },
     // {
     //   icon: Settings,
