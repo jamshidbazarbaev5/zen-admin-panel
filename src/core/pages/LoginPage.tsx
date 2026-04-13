@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useLogin } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../../components/ui/button';
@@ -14,6 +15,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const loginMutation = useLogin();
   const { login } = useAuth();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +29,7 @@ export default function LoginPage() {
       login(response.access, response.user);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');
+      setError(err.response?.data?.detail || t('login.loginFailed'));
     }
   };
 
@@ -39,21 +41,21 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl shadow-lg mb-4">
             <Coffee className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Zen Coffee</h1>
-          <p className="text-gray-600">Admin Panel</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">{t('login.title')}</h1>
+          <p className="text-gray-600">{t('login.subtitle')}</p>
         </div>
 
         {/* Login Card */}
         <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-100">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Welcome Back</h2>
-            <p className="text-gray-600 mt-1">Please sign in to continue</p>
+            <h2 className="text-2xl font-bold text-gray-900">{t('login.welcomeBack')}</h2>
+            <p className="text-gray-600 mt-1">{t('login.signInToContinue')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="username" className="text-gray-700 font-medium">
-                Username
+                {t('login.username')}
               </Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -62,7 +64,7 @@ export default function LoginPage() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter your username"
+                  placeholder={t('login.enterUsername')}
                   className="pl-10 h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   required
                 />
@@ -71,7 +73,7 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <Label htmlFor="password" className="text-gray-700 font-medium">
-                Password
+                {t('login.password')}
               </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -80,7 +82,7 @@ export default function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  placeholder={t('login.enterPassword')}
                   className="pl-10 h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   required
                 />
@@ -104,10 +106,10 @@ export default function LoginPage() {
               {loginMutation.isPending ? (
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Signing in...</span>
+                  <span>{t('login.signingIn')}</span>
                 </div>
               ) : (
-                'Sign In'
+                t('login.signIn')
               )}
             </Button>
           </form>
@@ -116,7 +118,7 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-sm text-gray-500">
-            © 2024 Zen Coffee. All rights reserved.
+            {t('login.copyright')}
           </p>
         </div>
       </div>

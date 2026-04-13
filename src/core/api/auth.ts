@@ -15,6 +15,8 @@ export interface User {
   name?: string;
   phone_number?: string;
   role?: string;
+  staff_name?: string;
+  staff_position?: string;
   has_active_shift?: boolean;
   is_mobile_user?: boolean;
   can_view_quantity?: boolean;
@@ -37,6 +39,7 @@ const getBaseURL = (): string => {
 const TOKEN_ENDPOINT = 'auth/login/';
 const REFRESH_ENDPOINT = 'auth/refresh/';
 const VERIFY_ENDPOINT = 'auth/verify/';
+const ME_ENDPOINT = 'auth/me/';
 
 // Local storage keys
 const ACCESS_TOKEN_KEY = 'access_token';
@@ -109,6 +112,18 @@ export const logout = (): void => {
   clearTokens();
 };
 
+export const getCurrentUser = async (): Promise<User> => {
+  const token = getAccessToken();
+  if (!token) throw new Error('No access token available');
+
+  const response = await authApi.get<User>(ME_ENDPOINT, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+};
+
 // React Query hooks
 export const useLogin = () => {
   const queryClient = useQueryClient();
@@ -141,6 +156,15 @@ export const useVerifyToken = (token: string) => {
     queryKey: ['verifyToken', token],
     queryFn: () => verifyToken(token),
     enabled: !!token,
+    retry: false,
+  });
+};
+
+export const useGetCurrentUser = () => {
+  return useQuery({
+    queryKey: ['currentUser'],
+    queryFn: getCurrentUser,
+    enabled: !!getAccessToken(),
     retry: false,
   });
 };

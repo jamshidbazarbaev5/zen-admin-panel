@@ -6,6 +6,8 @@ export interface Order {
   customer_phone: string;
   pickup_location_name: string | null;
   items_count: number;
+  should_cook: boolean;
+  is_overdue: boolean;
   number: string;
   status: 'pending' | 'paid' | 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled';
   order_type: 'pickup' | 'delivery';
@@ -20,7 +22,9 @@ export interface Order {
   balance_used: string;
   online_paid: string;
   pickup_time: string;
+  prep_minutes: number;
   iiko_order_id: string | null;
+  iiko_order_number: string;
   iiko_correlation_id: string | null;
   iiko_response: any;
   cancel_reason: string;

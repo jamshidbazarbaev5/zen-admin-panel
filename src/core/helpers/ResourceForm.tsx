@@ -19,7 +19,7 @@ import { t } from 'i18next';
 export interface FormField {
   name: string;
   label: string;
-  type: 'text' | 'number' | 'textarea' | 'select' | 'searchable-select' | 'file' | 'multiple-files' | 'checkbox' | 'datetime-local';
+  type: 'text' | 'number' | 'textarea' | 'select' | 'native-select' | 'searchable-select' | 'file' | 'multiple-files' | 'checkbox' | 'datetime-local' | 'password';
   placeholder?: string;
   options?: { value: string | number; label: string }[];
   required?: boolean;
@@ -40,6 +40,9 @@ export interface FormField {
   defaultValue?: any;
   onChange?: (value: any) => void;
   nestedField?: React.ReactNode;
+  maxLength?: number;
+  inputMode?: string;
+  autoComplete?: string;
 }
 
 // Update the ResourceFormProps interface to be more specific about generic type T
@@ -71,9 +74,19 @@ export function ResourceForm<T extends Record<string, any>>({
       if (!acc[parent]) {
         acc[parent] = {};
       }
-      acc[parent][child] = defaultValues[parent]?.[child] || '';
+      acc[parent][child] = defaultValues[parent]?.[child] ?? field.defaultValue ?? '';
     } else {
-      acc[field.name] = defaultValues[field.name] || '';
+      // Use field.defaultValue if defaultValues[field.name] is undefined
+      const value = defaultValues[field.name] !== undefined 
+        ? defaultValues[field.name] 
+        : field.defaultValue !== undefined 
+          ? field.defaultValue 
+          : field.type === 'checkbox' 
+            ? false 
+            : field.type === 'select' && field.options?.length 
+              ? undefined  // Don't set empty string for select fields
+              : '';
+      acc[field.name] = value;
     }
     return acc;
   }, {} as Record<string, any>);
@@ -135,6 +148,25 @@ export function ResourceForm<T extends Record<string, any>>({
                             className={`min-h-[80px] ${field.readOnly ? 'bg-gray-100' : ''}`}
                             rows={3}
                           />
+                        ) : field.type === 'native-select' ? (
+                          <select
+                            {...formField}
+                            onChange={(e) => {
+                              formField.onChange(e.target.value);
+                              if (field.onChange) {
+                                field.onChange(e.target.value);
+                              }
+                            }}
+                            disabled={field.readOnly || field.disabled}
+                            className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${field.readOnly || field.disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                          >
+                            {field.placeholder && <option value="">{field.placeholder}</option>}
+                            {field.options?.map((option: { value: string | number; label: string }) => (
+                              <option key={option.value} value={option.value.toString()}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
                         ) : field.type === 'select' ? (
                           <>
                             <Select
@@ -144,7 +176,7 @@ export function ResourceForm<T extends Record<string, any>>({
                                   field.onChange(value);
                                 }
                               }}
-                              value={formField.value !== undefined && formField.value !== null ? formField.value.toString() : undefined}
+                              value={formField.value !== undefined && formField.value !== null && formField.value !== '' ? formField.value.toString() : undefined}
                               defaultValue={field.defaultValue !== undefined ? field.defaultValue.toString() : undefined}
                             >
                               <SelectTrigger className={field.readOnly ? 'bg-gray-100' : ''}>

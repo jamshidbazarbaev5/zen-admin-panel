@@ -17,6 +17,9 @@ import BroadcastsPage from './core/pages/BroadcastsPage';
 import OrganizationsPage from './core/pages/OrganizationsPage';
 import TerminalGroupsPage from './core/pages/TerminalGroupsPage';
 import PaymentTypesPage from './core/pages/PaymentTypesPage';
+import SyncPage from './core/pages/SyncPage';
+import StaffPage from './core/pages/StaffPage';
+import AttendancePage from './core/pages/AttendancePage';
 // import SettingsPage from './core/pages/SettingsPage';
 import { Toaster } from 'sonner';
 import './App.css';
@@ -44,6 +47,40 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <Layout>{children}</Layout>;
 }
 
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading, currentUser } = useAuth();
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Check if user is admin
+  const isAdmin = currentUser?.is_superuser || currentUser?.role === 'admin';
+  
+  if (!isAdmin) {
+    return <Navigate to="/orders" replace />;
+  }
+
+  return <Layout>{children}</Layout>;
+}
+
+function RootRedirect() {
+  const { currentUser, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  const isAdmin = currentUser?.is_superuser || currentUser?.role === 'admin';
+  const redirectTo = isAdmin ? '/dashboard' : '/orders';
+
+  return <Navigate to={redirectTo} replace />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -56,41 +93,41 @@ function App() {
                 <Route
                   path="/dashboard"
                   element={
-                    <ProtectedRoute>
+                    <AdminRoute>
                       <DashboardPage />
-                    </ProtectedRoute>
+                    </AdminRoute>
                   }
                 />
                 <Route
                   path="/categories"
                   element={
-                    <ProtectedRoute>
+                    <AdminRoute>
                       <CategoriesPage />
-                    </ProtectedRoute>
+                    </AdminRoute>
                   }
                 />
                 <Route
                   path="/customers"
                   element={
-                    <ProtectedRoute>
+                    <AdminRoute>
                       <CustomersPage />
-                    </ProtectedRoute>
+                    </AdminRoute>
                   }
                 />
                 <Route
                   path="/products"
                   element={
-                    <ProtectedRoute>
+                    <AdminRoute>
                       <ProductsPage />
-                    </ProtectedRoute>
+                    </AdminRoute>
                   }
                 />
                 <Route
                   path="/modifier-groups"
                   element={
-                    <ProtectedRoute>
+                    <AdminRoute>
                       <ModifierGroupsPage />
-                    </ProtectedRoute>
+                    </AdminRoute>
                   }
                 />
                 <Route
@@ -104,52 +141,76 @@ function App() {
                 <Route
                   path="/payments"
                   element={
-                    <ProtectedRoute>
+                    <AdminRoute>
                       <PaymentsPage />
-                    </ProtectedRoute>
+                    </AdminRoute>
                   }
                 />
                 <Route
                   path="/cashback-tiers"
                   element={
-                    <ProtectedRoute>
+                    <AdminRoute>
                       <CashbackTiersPage />
-                    </ProtectedRoute>
+                    </AdminRoute>
                   }
                 />
                 <Route
                   path="/broadcasts"
                   element={
-                    <ProtectedRoute>
+                    <AdminRoute>
                       <BroadcastsPage />
-                    </ProtectedRoute>
+                    </AdminRoute>
                   }
                 />
                 <Route
                   path="/organizations"
                   element={
-                    <ProtectedRoute>
+                    <AdminRoute>
                       <OrganizationsPage />
-                    </ProtectedRoute>
+                    </AdminRoute>
                   }
                 />
                 <Route
                   path="/terminal-groups"
                   element={
-                    <ProtectedRoute>
+                    <AdminRoute>
                       <TerminalGroupsPage />
-                    </ProtectedRoute>
+                    </AdminRoute>
                   }
                 />
                 <Route
                   path="/payment-types"
                   element={
-                    <ProtectedRoute>
+                    <AdminRoute>
                       <PaymentTypesPage />
-                    </ProtectedRoute>
+                    </AdminRoute>
                   }
                 />
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route
+                  path="/sync"
+                  element={
+                    <AdminRoute>
+                      <SyncPage />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/staff"
+                  element={
+                    <AdminRoute>
+                      <StaffPage />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/attendance"
+                  element={
+                    <AdminRoute>
+                      <AttendancePage />
+                    </AdminRoute>
+                  }
+                />
+                <Route path="/" element={<RootRedirect />} />
               </Routes>
             </BrowserRouter>
             <Toaster position="top-right" />

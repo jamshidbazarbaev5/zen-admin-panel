@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ResourceTable } from '../helpers/ResourceTable';
 import { useGetOrders, type Order } from '../api/order';
 import { Input } from '../../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
+import { getAccessToken } from '../api/auth';
+import { Clock, ChefHat } from 'lucide-react';
 
 const statusLabels: Record<Order['status'], string> = {
   pending: 'Ожидает',
@@ -50,9 +52,21 @@ const columns = [
     header: 'Статус',
     accessorKey: 'status',
     cell: (row: Order) => (
-      <span className={`px-2 py-1 rounded text-xs ${statusColors[row.status]}`}>
-        {statusLabels[row.status]}
-      </span>
+      <div className="flex items-center gap-2">
+        <span className={`px-2 py-1 rounded text-xs ${statusColors[row.status]}`}>
+          {statusLabels[row.status]}
+        </span>
+        {row.is_overdue && (
+          <span className="px-2 py-1 rounded text-xs bg-red-100 text-red-800 flex items-center gap-1" title="Просрочен">
+            <Clock className="h-3 w-3" />
+          </span>
+        )}
+        {row.should_cook && (
+          <span className="px-2 py-1 rounded text-xs bg-purple-100 text-purple-800 flex items-center gap-1" title="Требует приготовления">
+            <ChefHat className="h-3 w-3" />
+          </span>
+        )}
+      </div>
     ),
   },
   {
@@ -74,17 +88,128 @@ export default function OrdersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [wsConnected, setWsConnected] = useState(false);
+  const [newOrderIndicator, setNewOrderIndicator] = useState(false);
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
+  
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const params: Record<string, any> = { page: currentPage };
+  const pageSize = 20;
+  const params: Record<string, any> = { 
+    page: currentPage, 
+    limit: pageSize,
+    offset: (currentPage - 1) * pageSize 
+  };
   if (searchTerm) params.search = searchTerm;
   if (statusFilter) params.status = statusFilter;
   if (orderTypeFilter) params.order_type = orderTypeFilter;
 
-  const { data: ordersData, isLoading } = useGetOrders({ params });
+  const { data: ordersData, isLoading, refetch } = useGetOrders({ params });
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter, orderTypeFilter]);
+
+  // Initialize audio for notifications
+  useEffect(() => {
+    // Create audio element for notification sound
+    audioRef.current = new Audio('/sound.mp3');
+    audioRef.current.volume = 0.7; // Set volume to 70%
+    // Preload the audio
+    audioRef.current.load();
+  }, []);
+
+  // Play notification sound
+  const playNotificationSound = () => {
+    if (audioRef.current) {
+      // Reset audio to start if it was already playing
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(err => {
+        console.error('[OrdersPage] Could not play notification sound:', err);
+        // If autoplay is blocked, we can't do much about it
+        // User needs to interact with the page first
+      });
+    }
+  };
+
+  // WebSocket connection
+  useEffect(() => {
+    const connectWebSocket = () => {
+      const token = getAccessToken();
+      if (!token) {
+        console.log('[OrdersPage] No access token, skipping WebSocket connection');
+        return;
+      }
+
+      const wsUrl = `wss://zen-coffee.uz/ws/orders/?token=${token}`;
+      console.log('[OrdersPage] Connecting to WebSocket...');
+      
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        console.log('[OrdersPage] WebSocket connected');
+        setWsConnected(true);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('[OrdersPage] WebSocket message received:', data);
+
+          if (data.type === 'order_created') {
+            // Play notification sound
+            playNotificationSound();
+            
+            // Show indicator
+            setNewOrderIndicator(true);
+            setTimeout(() => setNewOrderIndicator(false), 5000);
+
+            // Increment new orders count
+            setNewOrdersCount(prev => prev + 1);
+
+            // Refetch orders data
+            refetch();
+          } else if (data.type === 'order_updated') {
+            // Just refetch without sound for updates
+            refetch();
+          }
+        } catch (error) {
+          console.error('[OrdersPage] Error parsing WebSocket message:', error);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('[OrdersPage] WebSocket error:', error);
+        setWsConnected(false);
+      };
+
+      ws.onclose = () => {
+        console.log('[OrdersPage] WebSocket disconnected');
+        setWsConnected(false);
+        
+        // Attempt to reconnect after 5 seconds
+        reconnectTimeoutRef.current = setTimeout(() => {
+          console.log('[OrdersPage] Attempting to reconnect...');
+          connectWebSocket();
+        }, 5000);
+      };
+    };
+
+    connectWebSocket();
+
+    // Cleanup on unmount
+    return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [refetch]);
 
   const orders = ordersData?.results || [];
   const totalCount = ordersData?.count || 0;
@@ -97,7 +222,53 @@ export default function OrdersPage() {
   return (
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Заказы</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">Заказы</h1>
+          {/* New orders count badge */}
+          {newOrdersCount > 0 && (
+            <button
+              onClick={() => setNewOrdersCount(0)}
+              className="relative flex items-center gap-2 bg-red-500 text-white px-3 py-1.5 rounded-full hover:bg-red-600 transition-colors"
+              title="Нажмите, чтобы сбросить счетчик"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+              </svg>
+              <span className="text-sm font-bold">{newOrdersCount}</span>
+              <span className="text-xs">новых</span>
+            </button>
+          )}
+          {/* Test sound button */}
+          <button
+            onClick={playNotificationSound}
+            className="flex items-center gap-2 bg-blue-500 text-white px-3 py-1.5 rounded hover:bg-blue-600 transition-colors text-sm"
+            title="Проверить звук уведомления"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
+            </svg>
+            Тест звука
+          </button>
+        </div>
+        <div className="flex items-center gap-3">
+          {/* WebSocket connection indicator */}
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className="text-sm text-gray-600">
+              {wsConnected ? 'Подключено' : 'Отключено'}
+            </span>
+          </div>
+          
+          {/* New order indicator */}
+          {newOrderIndicator && (
+            <div className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full animate-pulse">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+              </svg>
+              <span className="text-sm font-medium">Новый заказ!</span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="mb-4 flex gap-4">
@@ -137,13 +308,13 @@ export default function OrdersPage() {
         isLoading={isLoading}
         onEdit={handleRowClick}
         totalCount={totalCount}
-        pageSize={20}
+        pageSize={pageSize}
         currentPage={currentPage}
         onPageChange={setCurrentPage}
       />
 
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Детали заказа {selectedOrder?.number}</DialogTitle>
           </DialogHeader>
@@ -166,9 +337,17 @@ export default function OrdersPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Статус</p>
-                  <span className={`px-2 py-1 rounded text-xs ${statusColors[selectedOrder.status]}`}>
-                    {statusLabels[selectedOrder.status]}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-1 rounded text-xs ${statusColors[selectedOrder.status]}`}>
+                      {statusLabels[selectedOrder.status]}
+                    </span>
+                    {selectedOrder.is_overdue && (
+                      <span className="px-2 py-1 rounded text-xs bg-red-100 text-red-800">Просрочен</span>
+                    )}
+                    {selectedOrder.should_cook && (
+                      <span className="px-2 py-1 rounded text-xs bg-purple-100 text-purple-800">Требует приготовления</span>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Время получения</p>
@@ -178,6 +357,16 @@ export default function OrdersPage() {
                   <p className="text-sm font-medium text-gray-500">Количество позиций</p>
                   <p className="text-base">{selectedOrder.items_count}</p>
                 </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Время приготовления</p>
+                  <p className="text-base">{selectedOrder.prep_minutes} мин</p>
+                </div>
+                {selectedOrder.iiko_order_number && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Номер заказа iiko</p>
+                    <p className="text-base">{selectedOrder.iiko_order_number}</p>
+                  </div>
+                )}
               </div>
 
               {selectedOrder.order_type === 'delivery' && (
