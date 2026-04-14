@@ -21,6 +21,7 @@ import SyncPage from './core/pages/SyncPage';
 import StaffPage from './core/pages/StaffPage';
 import AttendancePage from './core/pages/AttendancePage';
 import BusinessSettingsPage from './core/pages/BusinessSettingsPage';
+import ReviewsPage from './core/pages/ReviewsPage';
 // import SettingsPage from './core/pages/SettingsPage';
 import { Toaster } from 'sonner';
 import './App.css';
@@ -216,6 +217,14 @@ function App() {
                   element={
                     <AdminRoute>
                       <BusinessSettingsPage />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/reviews"
+                  element={
+                    <AdminRoute>
+                      <ReviewsPage />
                     </AdminRoute>
                   }
                 />

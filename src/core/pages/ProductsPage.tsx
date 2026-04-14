@@ -324,11 +324,11 @@ export default function ProductsPage() {
       />
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 bg-white">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b border-gray-200 shrink-0 bg-gray-50">
-            <DialogTitle className="text-gray-900">Редактировать продукт</DialogTitle>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 bg-card">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0 bg-muted/50">
+            <DialogTitle className="text-foreground">Редактировать продукт</DialogTitle>
           </DialogHeader>
-          <div className="overflow-y-auto flex-1 px-6 py-6 bg-white">
+          <div className="overflow-y-auto flex-1 px-6 py-6 bg-card">
             <ResourceForm
               fields={formFields}
               onSubmit={handleUpdate}

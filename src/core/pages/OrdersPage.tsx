@@ -17,13 +17,13 @@ const statusLabels: Record<Order['status'], string> = {
 };
 
 const statusColors: Record<Order['status'], string> = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  paid: 'bg-blue-100 text-blue-800',
-  confirmed: 'bg-indigo-100 text-indigo-800',
-  preparing: 'bg-orange-100 text-orange-800',
-  ready: 'bg-green-100 text-green-800',
-  completed: 'bg-gray-100 text-gray-800',
-  cancelled: 'bg-red-100 text-red-800',
+  pending: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 ring-1 ring-amber-500/25',
+  paid: 'bg-blue-500/15 text-blue-700 dark:text-blue-400 ring-1 ring-blue-500/25',
+  confirmed: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 ring-1 ring-indigo-500/25',
+  preparing: 'bg-orange-500/15 text-orange-700 dark:text-orange-400 ring-1 ring-orange-500/25',
+  ready: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/25',
+  completed: 'bg-muted text-muted-foreground ring-1 ring-border',
+  cancelled: 'bg-red-500/15 text-red-700 dark:text-red-400 ring-1 ring-red-500/25',
 };
 
 const columns = [
@@ -52,17 +52,17 @@ const columns = [
     header: 'Статус',
     accessorKey: 'status',
     cell: (row: Order) => (
-      <div className="flex items-center gap-2">
-        <span className={`px-2 py-1 rounded text-xs ${statusColors[row.status]}`}>
+      <div className="flex items-center gap-1.5">
+        <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${statusColors[row.status]}`}>
           {statusLabels[row.status]}
         </span>
         {row.is_overdue && (
-          <span className="px-2 py-1 rounded text-xs bg-red-100 text-red-800 flex items-center gap-1" title="Просрочен">
+          <span className="px-1.5 py-1 rounded-md text-xs font-semibold bg-red-500/15 text-red-700 dark:text-red-400 ring-1 ring-red-500/25 flex items-center gap-1" title="Просрочен">
             <Clock className="h-3 w-3" />
           </span>
         )}
         {row.should_cook && (
-          <span className="px-2 py-1 rounded text-xs bg-purple-100 text-purple-800 flex items-center gap-1" title="Требует приготовления">
+          <span className="px-1.5 py-1 rounded-md text-xs font-semibold bg-purple-500/15 text-purple-700 dark:text-purple-400 ring-1 ring-purple-500/25 flex items-center gap-1" title="Требует приготовления">
             <ChefHat className="h-3 w-3" />
           </span>
         )}
@@ -254,7 +254,7 @@ export default function OrdersPage() {
           {/* WebSocket connection indicator */}
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-muted-foreground">
               {wsConnected ? 'Подключено' : 'Отключено'}
             </span>
           </div>
@@ -322,48 +322,48 @@ export default function OrdersPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Клиент</p>
+                  <p className="text-sm font-medium text-muted-foreground">Клиент</p>
                   <p className="text-base">{selectedOrder.customer_name}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Телефон</p>
+                  <p className="text-sm font-medium text-muted-foreground">Телефон</p>
                   <p className="text-base">{selectedOrder.customer_phone}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Тип заказа</p>
+                  <p className="text-sm font-medium text-muted-foreground">Тип заказа</p>
                   <p className="text-base capitalize">
                     {selectedOrder.order_type === 'pickup' ? 'Самовывоз' : 'Доставка'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Статус</p>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-1 rounded text-xs ${statusColors[selectedOrder.status]}`}>
+                  <p className="text-sm font-medium text-muted-foreground">Статус</p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${statusColors[selectedOrder.status]}`}>
                       {statusLabels[selectedOrder.status]}
                     </span>
                     {selectedOrder.is_overdue && (
-                      <span className="px-2 py-1 rounded text-xs bg-red-100 text-red-800">Просрочен</span>
+                      <span className="px-2 py-1 rounded-md text-xs font-semibold bg-red-500/15 text-red-700 dark:text-red-400 ring-1 ring-red-500/25">Просрочен</span>
                     )}
                     {selectedOrder.should_cook && (
-                      <span className="px-2 py-1 rounded text-xs bg-purple-100 text-purple-800">Требует приготовления</span>
+                      <span className="px-2 py-1 rounded-md text-xs font-semibold bg-purple-500/15 text-purple-700 dark:text-purple-400 ring-1 ring-purple-500/25">Требует приготовления</span>
                     )}
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Время получения</p>
+                  <p className="text-sm font-medium text-muted-foreground">Время получения</p>
                   <p className="text-base">{new Date(selectedOrder.pickup_time).toLocaleString('ru-RU')}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Количество позиций</p>
+                  <p className="text-sm font-medium text-muted-foreground">Количество позиций</p>
                   <p className="text-base">{selectedOrder.items_count}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Время приготовления</p>
+                  <p className="text-sm font-medium text-muted-foreground">Время приготовления</p>
                   <p className="text-base">{selectedOrder.prep_minutes} мин</p>
                 </div>
                 {selectedOrder.iiko_order_number && (
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Номер заказа iiko</p>
+                    <p className="text-sm font-medium text-muted-foreground">Номер заказа iiko</p>
                     <p className="text-base">{selectedOrder.iiko_order_number}</p>
                   </div>
                 )}
@@ -374,24 +374,24 @@ export default function OrdersPage() {
                   <h3 className="font-semibold mb-2">Информация о доставке</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2">
-                      <p className="text-sm font-medium text-gray-500">Адрес</p>
+                      <p className="text-sm font-medium text-muted-foreground">Адрес</p>
                       <p className="text-base">{selectedOrder.delivery_address}</p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-500">Квартира</p>
+                      <p className="text-sm font-medium text-muted-foreground">Квартира</p>
                       <p className="text-base">{selectedOrder.delivery_flat || '-'}</p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-500">Подъезд</p>
+                      <p className="text-sm font-medium text-muted-foreground">Подъезд</p>
                       <p className="text-base">{selectedOrder.delivery_entrance || '-'}</p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-500">Этаж</p>
+                      <p className="text-sm font-medium text-muted-foreground">Этаж</p>
                       <p className="text-base">{selectedOrder.delivery_floor || '-'}</p>
                     </div>
                     {selectedOrder.delivery_comment && (
                       <div className="col-span-2">
-                        <p className="text-sm font-medium text-gray-500">Комментарий</p>
+                        <p className="text-sm font-medium text-muted-foreground">Комментарий</p>
                         <p className="text-base">{selectedOrder.delivery_comment}</p>
                       </div>
                     )}
@@ -403,15 +403,15 @@ export default function OrdersPage() {
                 <h3 className="font-semibold mb-2">Оплата</h3>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Общая сумма</p>
+                    <p className="text-sm font-medium text-muted-foreground">Общая сумма</p>
                     <p className="text-base">{parseFloat(selectedOrder.total_amount).toFixed(2)} сум</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Использовано баланса</p>
+                    <p className="text-sm font-medium text-muted-foreground">Использовано баланса</p>
                     <p className="text-base">{parseFloat(selectedOrder.balance_used).toFixed(2)} сум</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Оплачено онлайн</p>
+                    <p className="text-sm font-medium text-muted-foreground">Оплачено онлайн</p>
                     <p className="text-base">{parseFloat(selectedOrder.online_paid).toFixed(2)} сум</p>
                   </div>
                 </div>
@@ -419,12 +419,12 @@ export default function OrdersPage() {
 
               {selectedOrder.cancel_reason && (
                 <div className="border-t pt-4">
-                  <p className="text-sm font-medium text-gray-500">Причина отмены</p>
+                  <p className="text-sm font-medium text-muted-foreground">Причина отмены</p>
                   <p className="text-base text-red-600">{selectedOrder.cancel_reason}</p>
                 </div>
               )}
 
-              <div className="border-t pt-4 text-sm text-gray-500">
+              <div className="border-t pt-4 text-sm text-muted-foreground">
                 <p>Создан: {new Date(selectedOrder.created_at).toLocaleString('ru-RU')}</p>
                 <p>Обновлен: {new Date(selectedOrder.updated_at).toLocaleString('ru-RU')}</p>
               </div>

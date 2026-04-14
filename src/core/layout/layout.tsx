@@ -17,6 +17,7 @@ import {
   RefreshCw,
   UserCheck,
   ClipboardList,
+  MessageSquare,
   User as UserIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -26,6 +27,8 @@ import { useTranslation } from "react-i18next";
 import { useLogout, useGetCurrentUser } from "../api/auth";
 // import { useAuth } from "../context/AuthContext";
 import { useCurrentUser } from "../hooks/useCurrentUser";
+import { ThemeToggle } from "../components/ThemeToggle";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
 
 type NavItem = {
   icon: LucideIcon;
@@ -180,6 +183,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       icon: Users,
       label: "Клиенты",
       href: "/customers",
+    },
+    {
+      icon: MessageSquare,
+      label: "Отзывы",
+      href: "/reviews",
     },
     {
       icon: Radio,
@@ -433,6 +441,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <main className="flex-1 min-w-0 transition-all duration-300 overflow-x-auto ">
           <div className="h-full flex flex-col min-w-[320px]">
             <div className="bg-background px-4 md:px-6 py-4 flex items-center justify-end gap-4 sticky top-0 z-30 border-b border-border">
+              {/* Theme Toggle and Language Switcher */}
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <LanguageSwitcher />
+              </div>
+
               {/* User Profile Dropdown */}
               {currentUserData && (
                 <div className="relative">
@@ -462,28 +476,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         className="fixed inset-0 z-40" 
                         onClick={() => setProfileDropdownOpen(false)}
                       />
-                      <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
-                        <div className="p-4 bg-gray-50 border-b border-gray-200">
-                          <h3 className="font-semibold text-lg text-gray-900">{t('profile.title')}</h3>
+                      <div className="absolute right-0 mt-2 w-72 bg-card rounded-lg shadow-lg border border-border z-50 overflow-hidden">
+                        <div className="p-4 bg-muted/50 border-b border-border">
+                          <h3 className="font-semibold text-lg text-foreground">{t('profile.title')}</h3>
                         </div>
-                        <div className="p-4 space-y-3 bg-white">
+                        <div className="p-4 space-y-3 bg-card">
                           <div>
-                            <p className="text-xs text-gray-500">{t('profile.id')}</p>
-                            <p className="text-sm font-medium text-gray-900">{currentUserData.id}</p>
+                            <p className="text-xs text-muted-foreground">{t('profile.id')}</p>
+                            <p className="text-sm font-medium text-foreground">{currentUserData.id}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500">{t('profile.username')}</p>
-                            <p className="text-sm font-medium text-gray-900">{currentUserData.username}</p>
+                            <p className="text-xs text-muted-foreground">{t('profile.username')}</p>
+                            <p className="text-sm font-medium text-foreground">{currentUserData.username}</p>
                           </div>
                           {currentUserData.staff_name && (
                             <div>
-                              <p className="text-xs text-gray-500">{t('profile.staffName')}</p>
-                              <p className="text-sm font-medium text-gray-900">{currentUserData.staff_name}</p>
+                              <p className="text-xs text-muted-foreground">{t('profile.staffName')}</p>
+                              <p className="text-sm font-medium text-foreground">{currentUserData.staff_name}</p>
                             </div>
                           )}
                           <div>
-                            <p className="text-xs text-gray-500">{t('profile.role')}</p>
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-xs text-muted-foreground">{t('profile.role')}</p>
+                            <p className="text-sm font-medium text-foreground">
                               {currentUserData.is_superuser 
                                 ? t('staff.positions.admin')
                                 : currentUserData.role || t('staff.positions.staff')}
@@ -491,8 +505,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           </div>
                           {currentUserData.staff_position && (
                             <div>
-                              <p className="text-xs text-gray-500">{t('profile.position')}</p>
-                              <p className="text-sm font-medium text-gray-900">
+                              <p className="text-xs text-muted-foreground">{t('profile.position')}</p>
+                              <p className="text-sm font-medium text-foreground">
                                 {t(`staff.positions.${currentUserData.staff_position}`)}
                               </p>
                             </div>

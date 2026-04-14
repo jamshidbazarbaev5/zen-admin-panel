@@ -12,10 +12,10 @@ const statusLabels: Record<Payment['status'], string> = {
 };
 
 const statusColors: Record<Payment['status'], string> = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  paid: 'bg-green-100 text-green-800',
-  failed: 'bg-red-100 text-red-800',
-  refunded: 'bg-gray-100 text-gray-800',
+  pending: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300',
+  paid: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300',
+  failed: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300',
+  refunded: 'bg-muted text-muted-foreground',
 };
 
 const columns = [
@@ -121,21 +121,21 @@ export default function PaymentsPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Номер заказа</p>
+                  <p className="text-sm font-medium text-muted-foreground">Номер заказа</p>
                   <p className="text-base">{selectedPayment.order_number}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Статус</p>
+                  <p className="text-sm font-medium text-muted-foreground">Статус</p>
                   <span className={`px-2 py-1 rounded text-xs ${statusColors[selectedPayment.status]}`}>
                     {statusLabels[selectedPayment.status]}
                   </span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Сумма</p>
+                  <p className="text-sm font-medium text-muted-foreground">Сумма</p>
                   <p className="text-base">{parseFloat(selectedPayment.amount).toFixed(2)} сум</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">ID заказа</p>
+                  <p className="text-sm font-medium text-muted-foreground">ID заказа</p>
                   <p className="text-base">{selectedPayment.order}</p>
                 </div>
               </div>
@@ -144,15 +144,15 @@ export default function PaymentsPage() {
                 <h3 className="font-semibold mb-2">Информация Rahmat</h3>
                 <div className="space-y-2">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Invoice ID</p>
+                    <p className="text-sm font-medium text-muted-foreground">Invoice ID</p>
                     <p className="text-base">{selectedPayment.rahmat_invoice_id || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Transaction ID</p>
+                    <p className="text-sm font-medium text-muted-foreground">Transaction ID</p>
                     <p className="text-base">{selectedPayment.rahmat_trans_id || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Payment URL</p>
+                    <p className="text-sm font-medium text-muted-foreground">Payment URL</p>
                     {selectedPayment.rahmat_payment_url ? (
                       <a
                         href={selectedPayment.rahmat_payment_url}
@@ -169,7 +169,7 @@ export default function PaymentsPage() {
                 </div>
               </div>
 
-              <div className="border-t pt-4 text-sm text-gray-500">
+              <div className="border-t pt-4 text-sm text-muted-foreground">
                 <p>Создан: {new Date(selectedPayment.created_at).toLocaleString('ru-RU')}</p>
                 <p>Обновлен: {new Date(selectedPayment.updated_at).toLocaleString('ru-RU')}</p>
               </div>

@@ -135,7 +135,7 @@ export function ResourceForm<T extends Record<string, any>>({
                   render={({ field: formField }) => (
                     <FormItem className="space-y-2">
                       {field.type !== 'checkbox' && (
-                        <FormLabel className="text-sm font-medium text-gray-900">
+                        <FormLabel className="text-sm font-medium text-foreground">
                           {field.label}
                         </FormLabel>
                       )}
@@ -145,7 +145,7 @@ export function ResourceForm<T extends Record<string, any>>({
                             placeholder={field.placeholder}
                             {...formField}
                             readOnly={field.readOnly}
-                            className={`min-h-[80px] ${field.readOnly ? 'bg-gray-100' : ''}`}
+                            className={`min-h-[80px] ${field.readOnly ? 'bg-muted' : ''}`}
                             rows={3}
                           />
                         ) : field.type === 'native-select' ? (
@@ -158,7 +158,7 @@ export function ResourceForm<T extends Record<string, any>>({
                               }
                             }}
                             disabled={field.readOnly || field.disabled}
-                            className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${field.readOnly || field.disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                            className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${field.readOnly || field.disabled ? 'bg-muted cursor-not-allowed' : ''}`}
                           >
                             {field.placeholder && <option value="">{field.placeholder}</option>}
                             {field.options?.map((option: { value: string | number; label: string }) => (
@@ -179,7 +179,7 @@ export function ResourceForm<T extends Record<string, any>>({
                               value={formField.value !== undefined && formField.value !== null && formField.value !== '' ? formField.value.toString() : undefined}
                               defaultValue={field.defaultValue !== undefined ? field.defaultValue.toString() : undefined}
                             >
-                              <SelectTrigger className={field.readOnly ? 'bg-gray-100' : ''}>
+                              <SelectTrigger className={field.readOnly ? 'bg-muted' : ''}>
                                 <SelectValue placeholder={field.placeholder || t('placeholders.select')} />
                               </SelectTrigger>
                               <SelectContent>
@@ -218,7 +218,7 @@ export function ResourceForm<T extends Record<string, any>>({
                                 e.preventDefault();
                               }
                             }}>
-                              <div className="p-2 sticky top-0 bg-white dark:bg-gray-800 z-10 border-b border-gray-200 dark:border-gray-700 select-content-wrapper">
+                              <div className="p-2 sticky top-0 bg-background z-10 border-b border-border select-content-wrapper">
                                 <Input
                                   type="text"
                                   placeholder={`Search ${field.label.toLowerCase()}...`}
@@ -243,13 +243,13 @@ export function ResourceForm<T extends Record<string, any>>({
                                     </SelectItem>
                                   ))
                                 ) : (
-                                  <div className="p-2 text-center text-gray-500 dark:text-gray-400 text-sm">
+                                  <div className="p-2 text-center text-muted-foreground text-sm">
                                     No results found
                                   </div>
                                 )}
                               </div>
                               {field.showCreateButton && (
-                                <div className="p-2 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800 z-10">
+                                <div className="p-2 border-t border-border sticky bottom-0 bg-background z-10">
                                   <Button
                                     type="button"
                                     variant="outline"
@@ -337,7 +337,7 @@ export function ResourceForm<T extends Record<string, any>>({
                             className={field.readOnly ? 'bg-muted' : ''}
                           />
                         ) : field.type === 'checkbox' ? (
-                          <div className="flex items-center space-x-3 p-3.5 border border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors">
+                          <div className="flex items-center space-x-3 p-3.5 border border-border rounded-md bg-muted/50 hover:bg-muted transition-colors">
                             <Checkbox
                               checked={formField.value || false}
                               onCheckedChange={(checked) => {
@@ -349,7 +349,7 @@ export function ResourceForm<T extends Record<string, any>>({
                               disabled={field.readOnly}
                               className="h-5 w-5"
                             />
-                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-gray-900">
+                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-foreground">
                               {field.label}
                             </label>
                           </div>
@@ -359,7 +359,7 @@ export function ResourceForm<T extends Record<string, any>>({
                             placeholder={field.placeholder}
                             {...formField}
                             readOnly={field.readOnly}
-                            className={field.readOnly ? 'bg-gray-100' : ''}
+                            className={field.readOnly ? 'bg-muted' : ''}
                           />
                         ) : (
                           <Input
@@ -368,7 +368,7 @@ export function ResourceForm<T extends Record<string, any>>({
                             {...formField}
                             readOnly={field.readOnly}
                             disabled={field.disabled}
-                            className={field.readOnly || field.disabled ? 'bg-gray-100' : ''}
+                            className={field.readOnly || field.disabled ? 'bg-muted' : ''}
                             onChange={field.onChange
                               ? (e) => {
                                   const formatted = field.onChange!(e.target.value);
@@ -399,7 +399,7 @@ export function ResourceForm<T extends Record<string, any>>({
           
           {children}
           
-          <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-200">
+          <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-border">
             {!hideSubmitButton && (
               <Button 
                 type="submit" 
