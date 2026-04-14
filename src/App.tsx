@@ -20,6 +20,7 @@ import PaymentTypesPage from './core/pages/PaymentTypesPage';
 import SyncPage from './core/pages/SyncPage';
 import StaffPage from './core/pages/StaffPage';
 import AttendancePage from './core/pages/AttendancePage';
+import BusinessSettingsPage from './core/pages/BusinessSettingsPage';
 // import SettingsPage from './core/pages/SettingsPage';
 import { Toaster } from 'sonner';
 import './App.css';
@@ -207,6 +208,14 @@ function App() {
                   element={
                     <AdminRoute>
                       <AttendancePage />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/business-settings"
+                  element={
+                    <AdminRoute>
+                      <BusinessSettingsPage />
                     </AdminRoute>
                   }
                 />

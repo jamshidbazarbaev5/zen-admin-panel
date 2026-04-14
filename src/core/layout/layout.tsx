@@ -216,6 +216,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       label: "Посещаемость",
       href: "/attendance",
     },
+    {
+      icon: Settings,
+      label: "Настройки бизнеса",
+      href: "/business-settings",
+    },
     // {
     //   icon: Settings,
     //   label: "Настройки",
