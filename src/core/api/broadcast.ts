@@ -8,7 +8,7 @@ export interface Broadcast {
   media_type: 'photo' | 'video';
   target: 'all' | 'active';
   sent_at: string | null;
-  status: 'draft' | 'sent';
+  status: 'draft' | 'sent' | 'done';
   sent_count: number;
   created_at: string;
 }

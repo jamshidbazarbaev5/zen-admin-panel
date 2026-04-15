@@ -117,7 +117,7 @@ export default function ReviewsPage() {
       />
 
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Детали отзыва</DialogTitle>
           </DialogHeader>

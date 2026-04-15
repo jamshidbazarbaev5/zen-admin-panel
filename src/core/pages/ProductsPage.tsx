@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ResourceTable } from '../helpers/ResourceTable';
 import { ResourceForm } from '../helpers/ResourceForm';
 import { useGetProducts, useUpdateProduct, useBulkUpdateProducts, type Product, type ProductBulkUpdate } from '../api/product';
@@ -8,13 +8,204 @@ import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 import { Checkbox } from '../../components/ui/checkbox';
 import { toast } from 'sonner';
-import { Save } from 'lucide-react';
+import { Save, ImageIcon, Upload, X, Check } from 'lucide-react';
+import Cropper, { type Area } from 'react-easy-crop';
 
+// --- Image crop helper ---
+async function getCroppedBlob(imageSrc: string, crop: Area): Promise<File> {
+  const image = new Image();
+  image.crossOrigin = 'anonymous';
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve();
+    image.onerror = reject;
+    image.src = imageSrc;
+  });
+
+  const canvas = document.createElement('canvas');
+  canvas.width = crop.width;
+  canvas.height = crop.height;
+  const ctx = canvas.getContext('2d')!;
+  ctx.drawImage(image, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) return reject(new Error('Canvas toBlob failed'));
+      resolve(new File([blob], 'cropped.jpg', { type: 'image/jpeg' }));
+    }, 'image/jpeg', 0.92);
+  });
+}
+
+// --- Image Crop Dialog ---
+function ImageCropDialog({
+  open,
+  imageSrc,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  imageSrc: string | null;
+  onConfirm: (file: File) => void;
+  onCancel: () => void;
+}) {
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedArea, setCroppedArea] = useState<Area | null>(null);
+
+  const onCropComplete = useCallback((_: Area, croppedAreaPixels: Area) => {
+    setCroppedArea(croppedAreaPixels);
+  }, []);
+
+  const handleConfirm = async () => {
+    if (!imageSrc || !croppedArea) return;
+    const file = await getCroppedBlob(imageSrc, croppedArea);
+    onConfirm(file);
+  };
+
+  if (!open || !imageSrc) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
+      <DialogContent className="max-w-2xl p-0 gap-0 bg-card overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-4 border-b border-border bg-muted/50">
+          <DialogTitle>Обрезать изображение</DialogTitle>
+        </DialogHeader>
+        <div className="relative w-full h-[400px] bg-black/90">
+          <Cropper
+            image={imageSrc}
+            crop={crop}
+            zoom={zoom}
+            aspect={1}
+            onCropChange={setCrop}
+            onZoomChange={setZoom}
+            onCropComplete={onCropComplete}
+          />
+        </div>
+        <div className="px-6 py-4 flex items-center justify-between border-t border-border bg-muted/50">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <span>Масштаб:</span>
+            <input
+              type="range"
+              min={1}
+              max={3}
+              step={0.1}
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="w-32 accent-primary"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onCancel}>
+              <X className="h-4 w-4 mr-1" /> Отмена
+            </Button>
+            <Button onClick={handleConfirm}>
+              <Check className="h-4 w-4 mr-1" /> Подтвердить
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// --- Product image field (replaces the ResourceForm file field) ---
+function ProductImageField({
+  existingImage,
+  onCropped,
+  croppedPreview,
+}: {
+  existingImage?: string | null;
+  onCropped: (file: File) => void;
+  croppedPreview: string | null;
+}) {
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setCropSrc(url);
+    e.target.value = '';
+  };
+
+  const handleCropConfirm = (file: File) => {
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
+    onCropped(file);
+  };
+
+  const handleCropCancel = () => {
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
+  };
+
+  const previewUrl = croppedPreview || (typeof existingImage === 'string' ? existingImage : null);
+
+  return (
+    <>
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-foreground">Изображение</label>
+        <div className="flex items-start gap-4">
+          {previewUrl && (
+            <img
+              src={previewUrl}
+              alt="Превью"
+              className="w-24 h-24 rounded-lg object-cover border border-border"
+            />
+          )}
+          <div className="flex flex-col gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => inputRef.current?.click()}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              {previewUrl ? 'Заменить' : 'Загрузить'}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              После выбора файла вы сможете обрезать изображение
+            </p>
+          </div>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+        </div>
+      </div>
+
+      <ImageCropDialog
+        open={!!cropSrc}
+        imageSrc={cropSrc}
+        onConfirm={handleCropConfirm}
+        onCancel={handleCropCancel}
+      />
+    </>
+  );
+}
+
+// --- Columns ---
 const createColumns = (
   editMode: boolean,
   editedData: Map<number, Partial<Product>>,
   onFieldChange: (id: number, field: keyof Product, value: any) => void
 ) => [
+  {
+    header: '',
+    accessorKey: 'image' as keyof Product,
+    cell: (row: Product) => {
+      const src = typeof row.image === 'string' ? row.image : row.iiko_image_url;
+      return src ? (
+        <img src={src} alt="" className="w-10 h-10 rounded-md object-cover" />
+      ) : (
+        <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center">
+          <ImageIcon className="h-4 w-4 text-muted-foreground" />
+        </div>
+      );
+    },
+  },
   {
     header: 'Название (RU)',
     accessorKey: 'name_ru',
@@ -66,7 +257,7 @@ const createColumns = (
     cell: (row: Product) => {
       if (!editMode) {
         return (
-          <span className={`px-2 py-1 rounded text-xs ${row.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${row.is_available ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/25' : 'bg-red-500/15 text-red-700 dark:text-red-400 ring-1 ring-red-500/25'}`}>
             {row.is_available ? 'Доступен' : 'Недоступен'}
           </span>
         );
@@ -82,6 +273,7 @@ const createColumns = (
   },
 ];
 
+// --- Page ---
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
@@ -91,6 +283,8 @@ export default function ProductsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editedData, setEditedData] = useState<Map<number, Partial<Product>>>(new Map());
+  const [croppedImage, setCroppedImage] = useState<File | null>(null);
+  const [croppedPreview, setCroppedPreview] = useState<string | null>(null);
 
   const params: Record<string, any> = { page: currentPage };
   if (searchTerm) params.search = searchTerm;
@@ -146,7 +340,15 @@ export default function ProductsPage() {
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
+    setCroppedImage(null);
+    setCroppedPreview(null);
     setIsEditDialogOpen(true);
+  };
+
+  const handleCropped = (file: File) => {
+    setCroppedImage(file);
+    const url = URL.createObjectURL(file);
+    setCroppedPreview(url);
   };
 
   const handleUpdate = (data: any) => {
@@ -162,8 +364,10 @@ export default function ProductsPage() {
     formData.append('is_available', data.is_available ? 'true' : 'false');
     if (data.prep_minutes) formData.append('prep_minutes', data.prep_minutes.toString());
     formData.append('order', data.order?.toString() || '0');
-    
-    if (data.image && data.image instanceof File) {
+
+    if (croppedImage) {
+      formData.append('image', croppedImage);
+    } else if (data.image && data.image instanceof File) {
       formData.append('image', data.image);
     }
 
@@ -174,6 +378,9 @@ export default function ProductsPage() {
           toast.success('Продукт успешно обновлен');
           setIsEditDialogOpen(false);
           setEditingProduct(null);
+          setCroppedImage(null);
+          if (croppedPreview) URL.revokeObjectURL(croppedPreview);
+          setCroppedPreview(null);
         },
         onError: () => {
           toast.error('Ошибка при обновлении продукта');
@@ -224,12 +431,6 @@ export default function ProductsPage() {
       label: 'Описание (EN)',
       type: 'textarea' as const,
       placeholder: 'Введите описание на английском',
-    },
-    {
-      name: 'image',
-      label: 'Изображение',
-      type: 'file' as const,
-      existingImage: editingProduct?.image as string,
     },
     {
       name: 'is_available',
@@ -288,7 +489,7 @@ export default function ProductsPage() {
           disabled={editMode}
         />
         <select
-          className="p-2 border rounded"
+          className="p-2 border rounded bg-background text-foreground"
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
           disabled={editMode}
@@ -301,7 +502,7 @@ export default function ProductsPage() {
           ))}
         </select>
         <select
-          className="p-2 border rounded"
+          className="p-2 border rounded bg-background text-foreground"
           value={isAvailableFilter}
           onChange={(e) => setIsAvailableFilter(e.target.value)}
           disabled={editMode}
@@ -329,12 +530,19 @@ export default function ProductsPage() {
             <DialogTitle className="text-foreground">Редактировать продукт</DialogTitle>
           </DialogHeader>
           <div className="overflow-y-auto flex-1 px-6 py-6 bg-card">
-            <ResourceForm
-              fields={formFields}
-              onSubmit={handleUpdate}
-              defaultValues={editingProduct || {}}
-              isSubmitting={updateProduct.isPending}
+            <ProductImageField
+              existingImage={typeof editingProduct?.image === 'string' ? editingProduct.image : null}
+              onCropped={handleCropped}
+              croppedPreview={croppedPreview}
             />
+            <div className="mt-6">
+              <ResourceForm
+                fields={formFields}
+                onSubmit={handleUpdate}
+                defaultValues={editingProduct || {}}
+                isSubmitting={updateProduct.isPending}
+              />
+            </div>
           </div>
         </DialogContent>
       </Dialog>

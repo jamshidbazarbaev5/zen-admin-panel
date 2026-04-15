@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ResourceTable } from '../helpers/ResourceTable';
-import { Send } from 'lucide-react';
+import { Send, ImageIcon } from 'lucide-react';
 
 export default function BroadcastsPage() {
   const { t } = useTranslation();
@@ -114,6 +114,17 @@ export default function BroadcastsPage() {
 
   const columns = [
     {
+      header: '',
+      accessorKey: 'media' as keyof Broadcast,
+      cell: (row: Broadcast) => row.media ? (
+        <img src={row.media} alt="" className="w-10 h-10 rounded-md object-cover" />
+      ) : (
+        <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center">
+          <ImageIcon className="h-4 w-4 text-muted-foreground" />
+        </div>
+      ),
+    },
+    {
       header: t('text'),
       accessorKey: 'text' as keyof Broadcast,
       cell: (row: Broadcast) => (
@@ -133,15 +144,20 @@ export default function BroadcastsPage() {
     {
       header: t('status'),
       accessorKey: 'status' as keyof Broadcast,
-      cell: (row: Broadcast) => (
-        <span className={`px-2 py-1 rounded text-xs ${
-          row.status === 'sent' 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-yellow-100 text-yellow-800'
-        }`}>
-          {t(row.status)}
-        </span>
-      ),
+      cell: (row: Broadcast) => {
+        const statusLabels: Record<string, string> = { draft: 'Черновик', sent: 'Отправлено', done: 'Доставлено' };
+        return (
+          <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${
+            row.status === 'sent' || row.status === 'done'
+              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/25'
+              : row.status === 'draft'
+              ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 ring-1 ring-amber-500/25'
+              : 'bg-muted text-muted-foreground ring-1 ring-border'
+          }`}>
+            {statusLabels[row.status] || row.status}
+          </span>
+        );
+      },
     },
     {
       header: t('sentCount'),

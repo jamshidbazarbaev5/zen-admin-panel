@@ -1,25 +1,12 @@
 import { motion } from 'framer-motion';
-import { 
-  Users, 
-  TrendingUp, 
-  Activity, 
-  DollarSign,
-  Package
+import {
+  Users,
+  ShoppingCart,
+  Zap,
+  UserPlus,
+  Coffee,
+  CircleDot,
 } from 'lucide-react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import api from '../api/api';
@@ -34,319 +21,380 @@ interface DashboardData {
   };
   orders: {
     active: number;
-    today: {
-      count: number;
-      revenue: string;
-    };
-    week: {
-      count: number;
-      revenue: string;
-    };
-    month: {
-      count: number;
-      revenue: string;
-    };
-    by_status_today: {
-      confirmed?: number;
-      pending?: number;
-      [key: string]: number | undefined;
-    };
+    today: { count: number; revenue: string };
+    week: { count: number; revenue: string };
+    month: { count: number; revenue: string };
+    by_status_today: Record<string, number>;
   };
 }
 
-// --- Animation Variants ---
-const containerVariants = {
+// --- Animation ---
+const bento = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
+    transition: { staggerChildren: 0.06, delayChildren: 0.15 },
+  },
 };
 
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
+const cell = {
+  hidden: { opacity: 0, scale: 0.96, y: 12 },
   visible: {
-    y: 0,
     opacity: 1,
-    transition: { type: 'spring' as const, stiffness: 100, damping: 15 }
-  }
+    scale: 1,
+    y: 0,
+    transition: { type: 'spring' as const, stiffness: 200, damping: 24 },
+  },
+};
+
+// --- Helpers ---
+function fmt(v: string | number) {
+  return Number(v).toLocaleString('ru-RU');
+}
+
+const STATUS_META: Record<string, { label: string; color: string }> = {
+  pending:   { label: 'Ожидает',     color: '#eab308' },
+  paid:      { label: 'Оплачен',     color: '#3b82f6' },
+  confirmed: { label: 'Подтвержден', color: '#8b5cf6' },
+  preparing: { label: 'Готовится',   color: '#f97316' },
+  ready:     { label: 'Готов',       color: '#22c55e' },
+  completed: { label: 'Завершён',    color: '#64748b' },
+  cancelled: { label: 'Отменён',     color: '#ef4444' },
 };
 
 // --- Components ---
-const StatCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, t }: any) => (
-  <motion.div 
-    variants={itemVariants}
-    whileHover={{ y: -5, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}
-    className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 transition-all duration-300"
-  >
-    <div className="flex justify-between items-start">
-      <div>
-        <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
-        <h3 className="text-3xl font-bold text-slate-800">{value}</h3>
-        {subtitle && <p className="text-sm text-slate-400 mt-1">{subtitle}</p>}
-      </div>
-      <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600">
-        <Icon size={24} />
-      </div>
-    </div>
-    {trend && (
-      <div className="mt-4 flex items-center text-sm">
-        <span className={`flex items-center font-medium ${trend === 'up' ? 'text-emerald-500' : 'text-rose-500'}`}>
-          {trend === 'up' ? <TrendingUp size={16} className="mr-1" /> : <TrendingUp size={16} className="mr-1 rotate-180" />}
-          {trendValue}
-        </span>
-        <span className="text-slate-400 ml-2">{t('dashboard.vsLastPeriod', 'vs last period')}</span>
-      </div>
-    )}
-  </motion.div>
-);
 
-export default function App() {
-  const { t } = useTranslation();
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-
+function AnimatedNumber({ value, suffix = '' }: { value: number; suffix?: string }) {
+  const [display, setDisplay] = useState(0);
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const response = await api.get('/dashboard/');
-        setDashboardData(response.data);
-      } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (value === 0) { setDisplay(0); return; }
+    const duration = 900;
+    const steps = 30;
+    const increment = value / steps;
+    let current = 0;
+    let step = 0;
+    const timer = setInterval(() => {
+      step++;
+      current = Math.min(Math.round(increment * step), value);
+      setDisplay(current);
+      if (step >= steps) clearInterval(timer);
+    }, duration / steps);
+    return () => clearInterval(timer);
+  }, [value]);
+  return <>{fmt(display)}{suffix}</>;
+}
 
-    fetchDashboardData();
-  }, []);
+function StatusBar({ data }: { data: Record<string, number> }) {
+  const entries = Object.entries(data).filter(([, v]) => v > 0);
+  const total = entries.reduce((s, [, v]) => s + v, 0);
+  const [hovered, setHovered] = useState<string | null>(null);
 
-  if (loading || !dashboardData) {
+  if (entries.length === 0) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-slate-600">{t('dashboard.loading', 'Загрузка...')}</p>
-        </div>
+      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+        <Coffee className="h-5 w-5 mr-2 opacity-40" />
+        Нет заказов сегодня
       </div>
     );
   }
 
-  const orderStatusData = [
-    { name: t('dashboard.activeOrders'), value: dashboardData.orders.active, color: '#3b82f6' },
-    { name: t('dashboard.confirmed'), value: dashboardData.orders.by_status_today.confirmed || 0, color: '#10b981' },
-    { name: t('dashboard.pending'), value: dashboardData.orders.by_status_today.pending || 0, color: '#f59e0b' },
-  ];
+  const barData = entries.map(([key, value]) => ({
+    key,
+    name: STATUS_META[key]?.label || key,
+    value,
+    color: STATUS_META[key]?.color || '#94a3b8',
+  }));
 
-  // Derived data for charts
-  const revenueData = [
-    { name: t('dashboard.week1', 'Неделя 1'), revenue: 15000 },
-    { name: t('dashboard.week2', 'Неделя 2'), revenue: 35000 },
-    { name: t('dashboard.week3', 'Неделя 3'), revenue: 45000 },
-    { name: t('dashboard.week4', 'Неделя 4'), revenue: Number(dashboardData.orders.today.revenue) },
-  ];
+  return (
+    <div className="space-y-3">
+      {/* Stacked horizontal bar */}
+      <div className="flex h-4 w-full overflow-hidden rounded-full bg-muted">
+        {entries.map(([key, value], i) => (
+          <motion.div
+            key={key}
+            initial={{ width: 0 }}
+            animate={{ width: `${(value / total) * 100}%` }}
+            transition={{ delay: 0.4 + i * 0.1, duration: 0.6, ease: 'easeOut' }}
+            className="relative h-full first:rounded-l-full last:rounded-r-full cursor-pointer transition-opacity"
+            style={{
+              background: STATUS_META[key]?.color || '#94a3b8',
+              opacity: hovered !== null && hovered !== key ? 0.35 : 1,
+            }}
+            onMouseEnter={() => setHovered(key)}
+            onMouseLeave={() => setHovered(null)}
+          >
+            {hovered === key && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 whitespace-nowrap rounded-lg border border-border bg-card px-3 py-1.5 shadow-lg">
+                <p className="text-xs font-semibold text-foreground">{STATUS_META[key]?.label || key}</p>
+                <p className="text-[10px] text-muted-foreground">{value} заказов · {Math.round((value / total) * 100)}%</p>
+                <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-border" />
+              </div>
+            )}
+          </motion.div>
+        ))}
+      </div>
+      {/* Legend */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        {barData.map((item) => (
+          <div
+            key={item.name}
+            className="flex items-center gap-1.5 text-xs cursor-pointer transition-opacity"
+            style={{ opacity: hovered !== null && hovered !== item.key ? 0.4 : 1 }}
+            onMouseEnter={() => setHovered(item.key)}
+            onMouseLeave={() => setHovered(null)}
+          >
+            <div className="h-2 w-2 rounded-full" style={{ background: item.color }} />
+            <span className="text-muted-foreground">{item.name}</span>
+            <span className="font-semibold text-foreground tabular-nums">{item.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-  const customerGrowthData = [
-    { day: t('dashboard.mon', 'Пн'), new: 0 },
-    { day: t('dashboard.tue', 'Вт'), new: 1 },
-    { day: t('dashboard.wed', 'Ср'), new: 0 },
-    { day: t('dashboard.thu', 'Чт'), new: 2 },
-    { day: t('dashboard.fri', 'Пт'), new: 0 },
-    { day: t('dashboard.sat', 'Сб'), new: 0 },
-    { day: t('dashboard.sun', 'Вс'), new: 0 },
+function MiniBarChart({ data }: { data: { label: string; value: number; color: string }[] }) {
+  const max = Math.max(...data.map(d => d.value), 1);
+  const [hovered, setHovered] = useState<number | null>(null);
+  return (
+    <div className="flex items-end gap-1 h-16">
+      {data.map((d, i) => (
+        <div
+          key={d.label}
+          className="relative flex-1 flex items-end h-full"
+          onMouseEnter={() => setHovered(i)}
+          onMouseLeave={() => setHovered(null)}
+        >
+          <motion.div
+            initial={{ height: 0 }}
+            animate={{ height: `${Math.max((d.value / max) * 100, 4)}%` }}
+            transition={{ delay: 0.5 + i * 0.12, duration: 0.5, ease: 'easeOut' }}
+            className="w-full rounded-t-sm min-h-[3px] transition-opacity"
+            style={{
+              background: d.color,
+              opacity: hovered !== null && hovered !== i ? 0.35 : 1,
+            }}
+          />
+          {hovered === i && (
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 whitespace-nowrap rounded-lg border border-border bg-card px-3 py-1.5 shadow-lg">
+              <p className="text-xs font-semibold text-foreground">{fmt(d.value)} сум</p>
+              <p className="text-[10px] text-muted-foreground">{d.label}</p>
+              <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-border" />
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// --- Page ---
+export default function DashboardPage() {
+  const { t } = useTranslation();
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get('/dashboard/')
+      .then((res) => setData(res.data))
+      .catch((err) => console.error('Dashboard fetch failed:', err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading || !data) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
+        >
+          <Coffee className="h-8 w-8 text-muted-foreground" />
+        </motion.div>
+      </div>
+    );
+  }
+
+  const revenueChartData = [
+    { label: 'Сегодня', value: Number(data.orders.today.revenue), color: '#22c55e' },
+    { label: 'Неделя', value: Number(data.orders.week.revenue), color: '#3b82f6' },
+    { label: 'Месяц', value: Number(data.orders.month.revenue), color: '#8b5cf6' },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        
-        {/* Header */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8"
+    <div className="mx-auto max-w-7xl p-4 md:p-8">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="mb-8 flex items-end justify-between"
+      >
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+            {t('dashboard.title', 'Панель управления')}
+          </p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+            Zen Coffee
+          </h1>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+          </span>
+          Live
+        </div>
+      </motion.div>
+
+      {/* Bento Grid */}
+      <motion.div
+        variants={bento}
+        initial="hidden"
+        animate="visible"
+        className="grid auto-rows-[minmax(120px,auto)] grid-cols-4 gap-3 md:gap-4 lg:grid-cols-6"
+      >
+        {/* --- Hero Revenue Cell (wide) --- */}
+        <motion.div
+          variants={cell}
+          className="col-span-4 row-span-2 flex flex-col justify-between rounded-2xl border border-border bg-card p-6 lg:col-span-3"
         >
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{t('dashboard.title')}</h1>
-            <p className="text-slate-500 mt-1">{t('dashboard.welcome', 'Добро пожаловать. Вот что происходит сегодня.')}</p>
+            <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
+              Выручка за месяц
+            </p>
+            <div className="mt-3 flex items-baseline gap-2">
+              <span className="text-5xl font-bold tracking-tight text-foreground tabular-nums md:text-6xl">
+                <AnimatedNumber value={Number(data.orders.month.revenue)} />
+              </span>
+              <span className="text-lg text-muted-foreground">сум</span>
+            </div>
           </div>
-          <div className="mt-4 md:mt-0 flex items-center space-x-3 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-100">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-            <span className="text-sm font-medium text-slate-600">{t('dashboard.liveUpdates', 'Обновления в реальном времени')}</span>
+          <div className="mt-6">
+            <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+              <span>Сегодня</span>
+              <span>Неделя</span>
+              <span>Месяц</span>
+            </div>
+            <MiniBarChart data={revenueChartData} />
           </div>
         </motion.div>
 
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+        {/* --- Active Orders (tall) --- */}
+        <motion.div
+          variants={cell}
+          className="col-span-2 row-span-2 flex flex-col justify-between rounded-2xl border border-border bg-card p-5 lg:col-span-1"
         >
-          {/* KPIs */}
-          <StatCard 
-            title={`${t('dashboard.revenue')} (${t('dashboard.thisMonth')})`}
-            value={`${Number(dashboardData.orders.month.revenue).toLocaleString()}`}
-            icon={DollarSign}
-            trend="up"
-            trendValue="+12.5%"
-            t={t}
-          />
-          <StatCard 
-            title={t('dashboard.activeOrders')}
-            value={dashboardData.orders.active}
-            subtitle={`${dashboardData.orders.today.count} ${t('dashboard.newToday', 'новых сегодня')}`}
-            icon={Package}
-            trend="up"
-            trendValue="+4.2%"
-            t={t}
-          />
-          <StatCard 
-            title={t('dashboard.totalCustomers')}
-            value={dashboardData.customers.total}
-            subtitle={`${dashboardData.customers.new_week} ${t('dashboard.newThisWeek', 'новых за неделю')}`}
-            icon={Users}
-            trend="up"
-            trendValue="+100%"
-            t={t}
-          />
-          <StatCard 
-            title={`${t('dashboard.revenue')} (${t('dashboard.today')})`}
-            value={`${Number(dashboardData.orders.today.revenue).toLocaleString()}`}
-            subtitle={`${dashboardData.orders.by_status_today.confirmed || 0} ${t('dashboard.confirmedOrder', 'подтвержденных заказов')}`}
-            icon={Activity}
-            t={t}
-          />
+          <div className="flex items-center justify-between">
+            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            <div className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" style={{ background: '#f59e0b' }} />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full" style={{ background: '#f59e0b' }} />
+            </div>
+          </div>
+          <div>
+            <span className="text-4xl font-bold text-foreground tabular-nums">
+              <AnimatedNumber value={data.orders.active} />
+            </span>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Активных заказов
+            </p>
+          </div>
+          <div className="rounded-lg bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground tabular-nums">{data.orders.today.count}</span> новых сегодня
+          </div>
         </motion.div>
 
-        {/* Charts Section */}
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+        {/* --- Total Customers --- */}
+        <motion.div
+          variants={cell}
+          className="col-span-2 flex flex-col justify-between rounded-2xl border border-border bg-card p-5 lg:col-span-2"
         >
-          {/* Main Area Chart */}
-          <motion.div variants={itemVariants} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-2">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold text-slate-800">{t('dashboard.revenueOverview')}</h3>
-              <select className="bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 outline-none">
-                <option>{t('dashboard.thisMonth')}</option>
-                <option>{t('dashboard.lastMonth', 'Прошлый месяц')}</option>
-                <option>{t('dashboard.thisYear', 'Этот год')}</option>
-              </select>
-            </div>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(value) => `${value / 1000}k`} />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                    formatter={(value: number) => [`${value.toLocaleString()}`, t('dashboard.revenue')]}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="revenue" 
-                    stroke="#6366f1" 
-                    strokeWidth={3}
-                    fillOpacity={1} 
-                    fill="url(#colorRevenue)" 
-                    animationDuration={1500}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </motion.div>
-
-          {/* Donut Chart */}
-          <motion.div variants={itemVariants} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-            <h3 className="text-lg font-bold text-slate-800 mb-6">{t('dashboard.orderStatusDistribution')}</h3>
-            <div className="h-[220px] w-full relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={orderStatusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                    animationDuration={1500}
-                  >
-                    {orderStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              {/* Center Text */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-3xl font-bold text-slate-800">{dashboardData.orders.month.count}</span>
-                <span className="text-xs text-slate-500">{t('dashboard.totalOrders', 'Всего заказов')}</span>
-              </div>
-            </div>
-            <div className="mt-6 space-y-3">
-              {orderStatusData.map((item, index) => (
-                <div key={index} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: item.color }}></div>
-                    <span className="text-slate-600">{item.name}</span>
-                  </div>
-                  <span className="font-medium text-slate-800">{item.value}</span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Bar Chart - Customer Growth */}
-          <motion.div variants={itemVariants} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-3">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="text-lg font-bold text-slate-800">{t('dashboard.customerGrowth')}</h3>
-                <p className="text-sm text-slate-500">{t('dashboard.newCustomersThisWeek', 'Новые клиенты за эту неделю')}</p>
-              </div>
-              <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
-                <Users size={20} />
-              </div>
-            </div>
-            <div className="h-[250px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={customerGrowthData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} allowDecimals={false} />
-                  <Tooltip 
-                    cursor={{ fill: '#f8fafc' }}
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                  />
-                  <Bar 
-                    dataKey="new" 
-                    fill="#3b82f6" 
-                    radius={[4, 4, 0, 0]} 
-                    animationDuration={1500}
-                    barSize={40}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </motion.div>
+          <Users className="h-4 w-4 text-muted-foreground" />
+          <div>
+            <span className="text-3xl font-bold text-foreground tabular-nums">
+              <AnimatedNumber value={data.customers.total} />
+            </span>
+            <p className="text-xs text-muted-foreground">Клиентов</p>
+          </div>
         </motion.div>
 
-      </div>
+        {/* --- Revenue Today --- */}
+        <motion.div
+          variants={cell}
+          className="col-span-2 flex flex-col justify-between rounded-2xl border border-border bg-card p-5 lg:col-span-2"
+        >
+          <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+            Сегодня
+          </p>
+          <div>
+            <span className="text-2xl font-bold text-foreground tabular-nums">
+              <AnimatedNumber value={Number(data.orders.today.revenue)} />
+            </span>
+            <span className="ml-1 text-sm text-muted-foreground">сум</span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground tabular-nums">{data.orders.today.count}</span> заказов
+          </p>
+        </motion.div>
+
+        {/* --- Revenue Week --- */}
+        <motion.div
+          variants={cell}
+          className="col-span-2 flex flex-col justify-between rounded-2xl border border-border bg-card p-5 lg:col-span-2"
+        >
+          <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+            Неделя
+          </p>
+          <div>
+            <span className="text-2xl font-bold text-foreground tabular-nums">
+              <AnimatedNumber value={Number(data.orders.week.revenue)} />
+            </span>
+            <span className="ml-1 text-sm text-muted-foreground">сум</span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground tabular-nums">{data.orders.week.count}</span> заказов
+          </p>
+        </motion.div>
+
+        {/* --- Customer Breakdown (wide) --- */}
+        <motion.div
+          variants={cell}
+          className="col-span-4 flex items-center gap-0 rounded-2xl border border-border bg-card lg:col-span-2"
+        >
+          {[
+            { icon: Users, label: 'Активных', value: data.customers.active, color: '#22c55e' },
+            { icon: Zap, label: 'Сегодня', value: data.customers.new_today, color: '#f59e0b' },
+            { icon: UserPlus, label: 'За неделю', value: data.customers.new_week, color: '#8b5cf6' },
+          ].map((item, i) => (
+            <div
+              key={item.label}
+              className={`flex flex-1 flex-col items-center justify-center py-4 ${
+                i > 0 ? 'border-l border-border' : ''
+              }`}
+            >
+              <item.icon className="mb-2 h-4 w-4" style={{ color: item.color }} />
+              <span className="text-xl font-bold text-foreground tabular-nums">{item.value}</span>
+              <span className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                {item.label}
+              </span>
+            </div>
+          ))}
+        </motion.div>
+
+        {/* --- Order Status Today (full width) --- */}
+        <motion.div
+          variants={cell}
+          className="col-span-4 rounded-2xl border border-border bg-card p-5 lg:col-span-4"
+        >
+          <div className="mb-4 flex items-center gap-2">
+            <CircleDot className="h-4 w-4 text-muted-foreground" />
+            <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
+              Статусы заказов сегодня
+            </p>
+          </div>
+          <StatusBar data={data.orders.by_status_today} />
+        </motion.div>
+      </motion.div>
     </div>
   );
 }
