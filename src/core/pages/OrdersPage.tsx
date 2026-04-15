@@ -56,14 +56,16 @@ const columns = [
         <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${statusColors[row.status]}`}>
           {statusLabels[row.status]}
         </span>
-        {row.is_overdue && (
-          <span className="px-1.5 py-1 rounded-md text-xs font-semibold bg-red-500/15 text-red-700 dark:text-red-400 ring-1 ring-red-500/25 flex items-center gap-1" title="Просрочен">
-            <Clock className="h-3 w-3" />
+        {row.should_cook && (
+          <span className="relative flex h-6 w-6 items-center justify-center" title="Готовить">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-400 opacity-40" />
+            <ChefHat className="relative h-4 w-4 text-orange-500" />
           </span>
         )}
-        {row.should_cook && (
-          <span className="px-1.5 py-1 rounded-md text-xs font-semibold bg-purple-500/15 text-purple-700 dark:text-purple-400 ring-1 ring-purple-500/25 flex items-center gap-1" title="Требует приготовления">
-            <ChefHat className="h-3 w-3" />
+        {row.is_overdue && (
+          <span className="relative flex h-6 w-6 items-center justify-center" title="Просрочен">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-40" />
+            <Clock className="relative h-4 w-4 text-red-500" />
           </span>
         )}
       </div>
