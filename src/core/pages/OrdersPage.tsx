@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ResourceTable } from '../helpers/ResourceTable';
-import { useGetOrders, type Order } from '../api/order';
+import { useGetOrders, useGetOrder, type Order } from '../api/order';
 import { Input } from '../../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { getAccessToken } from '../api/auth';
@@ -216,6 +216,12 @@ export default function OrdersPage() {
   const orders = ordersData?.results || [];
   const totalCount = ordersData?.count || 0;
 
+  // Fetch full order detail (with items) when a row is selected
+  const { data: orderDetail } = useGetOrder(
+    isDetailDialogOpen && selectedOrder?.id ? selectedOrder.id : 0
+  );
+  const detailOrder = orderDetail ?? selectedOrder;
+
   const handleRowClick = (order: Order) => {
     setSelectedOrder(order);
     setIsDetailDialogOpen(true);
@@ -318,85 +324,138 @@ export default function OrdersPage() {
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Детали заказа {selectedOrder?.number}</DialogTitle>
+            <DialogTitle>Детали заказа {detailOrder?.number}</DialogTitle>
           </DialogHeader>
-          {selectedOrder && (
+          {detailOrder && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Клиент</p>
-                  <p className="text-base">{selectedOrder.customer_name}</p>
+                  <p className="text-base">{detailOrder.customer_name}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Телефон</p>
-                  <p className="text-base">{selectedOrder.customer_phone}</p>
+                  <p className="text-base">{detailOrder.customer_phone}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Тип заказа</p>
                   <p className="text-base capitalize">
-                    {selectedOrder.order_type === 'pickup' ? 'Самовывоз' : 'Доставка'}
+                    {detailOrder.order_type === 'pickup' ? 'Самовывоз' : 'Доставка'}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Статус</p>
                   <div className="flex items-center gap-1.5 mt-1">
-                    <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${statusColors[selectedOrder.status]}`}>
-                      {statusLabels[selectedOrder.status]}
+                    <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${statusColors[detailOrder.status]}`}>
+                      {statusLabels[detailOrder.status]}
                     </span>
-                    {selectedOrder.is_overdue && (
+                    {detailOrder.is_overdue && (
                       <span className="px-2 py-1 rounded-md text-xs font-semibold bg-red-500/15 text-red-700 dark:text-red-400 ring-1 ring-red-500/25">Просрочен</span>
                     )}
-                    {selectedOrder.should_cook && (
+                    {detailOrder.should_cook && (
                       <span className="px-2 py-1 rounded-md text-xs font-semibold bg-purple-500/15 text-purple-700 dark:text-purple-400 ring-1 ring-purple-500/25">Требует приготовления</span>
                     )}
                   </div>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Время получения</p>
-                  <p className="text-base">{new Date(selectedOrder.pickup_time).toLocaleString('ru-RU')}</p>
+                  <p className="text-base">{new Date(detailOrder.pickup_time).toLocaleString('ru-RU')}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Количество позиций</p>
-                  <p className="text-base">{selectedOrder.items_count}</p>
+                  <p className="text-base">{detailOrder.items_count ?? detailOrder.items?.length ?? 0}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Время приготовления</p>
-                  <p className="text-base">{selectedOrder.prep_minutes} мин</p>
+                  <p className="text-base">{detailOrder.prep_minutes} мин</p>
                 </div>
-                {selectedOrder.iiko_order_number && (
+                {detailOrder.iiko_order_number && (
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Номер заказа iiko</p>
-                    <p className="text-base">{selectedOrder.iiko_order_number}</p>
+                    <p className="text-base">{detailOrder.iiko_order_number}</p>
                   </div>
                 )}
               </div>
 
-              {selectedOrder.order_type === 'delivery' && (
+              {detailOrder.order_type === 'delivery' && (
                 <div className="border-t pt-4">
                   <h3 className="font-semibold mb-2">Информация о доставке</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2">
                       <p className="text-sm font-medium text-muted-foreground">Адрес</p>
-                      <p className="text-base">{selectedOrder.delivery_address}</p>
+                      <p className="text-base">{detailOrder.delivery_address}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Квартира</p>
-                      <p className="text-base">{selectedOrder.delivery_flat || '-'}</p>
+                      <p className="text-base">{detailOrder.delivery_flat || '-'}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Подъезд</p>
-                      <p className="text-base">{selectedOrder.delivery_entrance || '-'}</p>
+                      <p className="text-base">{detailOrder.delivery_entrance || '-'}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Этаж</p>
-                      <p className="text-base">{selectedOrder.delivery_floor || '-'}</p>
+                      <p className="text-base">{detailOrder.delivery_floor || '-'}</p>
                     </div>
-                    {selectedOrder.delivery_comment && (
+                    {detailOrder.delivery_comment && (
                       <div className="col-span-2">
                         <p className="text-sm font-medium text-muted-foreground">Комментарий</p>
-                        <p className="text-base">{selectedOrder.delivery_comment}</p>
+                        <p className="text-base">{detailOrder.delivery_comment}</p>
                       </div>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {detailOrder.items && detailOrder.items.length > 0 && (
+                <div className="border-t pt-4">
+                  <h3 className="font-semibold mb-3">Позиции заказа</h3>
+                  <div className="space-y-3">
+                    {detailOrder.items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="rounded-lg border bg-card p-3"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-primary/10 px-1.5 text-xs font-semibold text-primary">
+                                ×{item.quantity}
+                              </span>
+                              <p className="font-medium">{item.product_name}</p>
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {parseFloat(item.price).toFixed(2)} сум за шт.
+                            </p>
+                            {item.modifiers && item.modifiers.length > 0 && (
+                              <ul className="mt-2 space-y-1 pl-4">
+                                {item.modifiers.map((mod) => (
+                                  <li
+                                    key={mod.id}
+                                    className="flex items-center justify-between text-sm text-muted-foreground"
+                                  >
+                                    <span>
+                                      + {mod.modifier_name}
+                                      {mod.quantity > 1 && ` ×${mod.quantity}`}
+                                    </span>
+                                    {parseFloat(mod.price) > 0 && (
+                                      <span>
+                                        {parseFloat(mod.price).toFixed(2)} сум
+                                      </span>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold">
+                              {parseFloat(item.subtotal).toFixed(2)} сум
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -406,29 +465,29 @@ export default function OrdersPage() {
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Общая сумма</p>
-                    <p className="text-base">{parseFloat(selectedOrder.total_amount).toFixed(2)} сум</p>
+                    <p className="text-base">{parseFloat(detailOrder.total_amount).toFixed(2)} сум</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Использовано баланса</p>
-                    <p className="text-base">{parseFloat(selectedOrder.balance_used).toFixed(2)} сум</p>
+                    <p className="text-base">{parseFloat(detailOrder.balance_used).toFixed(2)} сум</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Оплачено онлайн</p>
-                    <p className="text-base">{parseFloat(selectedOrder.online_paid).toFixed(2)} сум</p>
+                    <p className="text-base">{parseFloat(detailOrder.online_paid).toFixed(2)} сум</p>
                   </div>
                 </div>
               </div>
 
-              {selectedOrder.cancel_reason && (
+              {detailOrder.cancel_reason && (
                 <div className="border-t pt-4">
                   <p className="text-sm font-medium text-muted-foreground">Причина отмены</p>
-                  <p className="text-base text-red-600">{selectedOrder.cancel_reason}</p>
+                  <p className="text-base text-red-600">{detailOrder.cancel_reason}</p>
                 </div>
               )}
 
               <div className="border-t pt-4 text-sm text-muted-foreground">
-                <p>Создан: {new Date(selectedOrder.created_at).toLocaleString('ru-RU')}</p>
-                <p>Обновлен: {new Date(selectedOrder.updated_at).toLocaleString('ru-RU')}</p>
+                <p>Создан: {new Date(detailOrder.created_at).toLocaleString('ru-RU')}</p>
+                <p>Обновлен: {new Date(detailOrder.updated_at).toLocaleString('ru-RU')}</p>
               </div>
             </div>
           )}

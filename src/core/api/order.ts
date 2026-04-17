@@ -1,11 +1,30 @@
 import { createResourceApiHooks } from '../helpers/createResourceApi';
 
+export interface OrderItemModifier {
+  id: number;
+  modifier: number;
+  modifier_name: string;
+  quantity: number;
+  price: string;
+}
+
+export interface OrderItem {
+  id: number;
+  product: number;
+  product_name: string;
+  quantity: number;
+  price: string;
+  subtotal: string;
+  modifiers: OrderItemModifier[];
+}
+
 export interface Order {
   id?: number;
   customer_name: string;
   customer_phone: string;
   pickup_location_name: string | null;
-  items_count: number;
+  items_count?: number;
+  items?: OrderItem[];
   should_cook: boolean;
   is_overdue: boolean;
   number: string;
