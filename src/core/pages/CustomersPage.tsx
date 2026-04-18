@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { ResourceTable } from '../helpers/ResourceTable';
 import { ResourceForm } from '../helpers/ResourceForm';
 import { useGetCustomers, useUpdateCustomer, type Customer } from '../api/customer';
+import {
+  useGetBalanceTransactions,
+  type BalanceTransactionType,
+} from '../api/balanceTransaction';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
 import { toast } from 'sonner';
@@ -49,12 +53,29 @@ const columns = [
   },
 ];
 
+const TX_TYPE_LABELS: Record<BalanceTransactionType, string> = {
+  deposit: 'Пополнение',
+  cashback: 'Кэшбэк',
+  spend: 'Списание',
+};
+
+const TX_TYPE_BADGE: Record<BalanceTransactionType, string> = {
+  deposit: 'bg-green-100 text-green-800',
+  cashback: 'bg-blue-100 text-blue-800',
+  spend: 'bg-red-100 text-red-800',
+};
+
 export default function CustomersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isActiveFilter, setIsActiveFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [isTxDialogOpen, setIsTxDialogOpen] = useState(false);
+  const [txTypeFilter, setTxTypeFilter] = useState<BalanceTransactionType | ''>('');
+  const [txPage, setTxPage] = useState(1);
 
   const params: Record<string, any> = { page: currentPage };
   if (searchTerm) params.search = searchTerm;
@@ -64,16 +85,41 @@ export default function CustomersPage() {
 
   const updateCustomer = useUpdateCustomer();
 
+  const txParams: Record<string, any> = { page: txPage };
+  if (selectedCustomer?.id) txParams.customer = selectedCustomer.id;
+  if (txTypeFilter) txParams.tx_type = txTypeFilter;
+
+  const { data: txData, isLoading: isTxLoading } = useGetBalanceTransactions({
+    params: txParams,
+    enabled: isTxDialogOpen && !!selectedCustomer?.id,
+  });
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, isActiveFilter]);
 
+  useEffect(() => {
+    setTxPage(1);
+  }, [txTypeFilter, selectedCustomer?.id]);
+
   const customers = customersData?.results || [];
   const totalCount = customersData?.count || 0;
+
+  const transactions = txData?.results || [];
+  const txTotalCount = txData?.count || 0;
+  const txPageSize = 20;
+  const txTotalPages = Math.max(1, Math.ceil(txTotalCount / txPageSize));
 
   const handleEdit = (customer: Customer) => {
     setEditingCustomer(customer);
     setIsEditDialogOpen(true);
+  };
+
+  const handleRowClick = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setTxTypeFilter('');
+    setTxPage(1);
+    setIsTxDialogOpen(true);
   };
 
   const handleUpdate = (data: any) => {
@@ -153,6 +199,7 @@ export default function CustomersPage() {
         columns={columns}
         isLoading={isLoading}
         onEdit={handleEdit}
+        onRowClick={handleRowClick}
         totalCount={totalCount}
         pageSize={20}
         currentPage={currentPage}
@@ -172,6 +219,110 @@ export default function CustomersPage() {
               isSubmitting={updateCustomer.isPending}
             />
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isTxDialogOpen} onOpenChange={setIsTxDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 bg-card">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0 bg-muted/50">
+            <DialogTitle className="text-foreground">
+              Транзакции баланса
+              {selectedCustomer && (
+                <span className="text-muted-foreground font-normal ml-2">
+                  — {selectedCustomer.name} ({selectedCustomer.phone})
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="px-6 py-4 border-b border-border flex gap-2 flex-wrap">
+            {(['', 'deposit', 'cashback', 'spend'] as const).map((type) => (
+              <button
+                key={type || 'all'}
+                type="button"
+                onClick={() => setTxTypeFilter(type as BalanceTransactionType | '')}
+                className={`px-3 py-1.5 rounded text-sm border transition-colors ${
+                  txTypeFilter === type
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-background text-foreground border-border hover:bg-muted'
+                }`}
+              >
+                {type === '' ? 'Все' : TX_TYPE_LABELS[type as BalanceTransactionType]}
+              </button>
+            ))}
+          </div>
+
+          <div className="overflow-y-auto flex-1 px-6 py-4 bg-card">
+            {isTxLoading ? (
+              <div className="text-center py-8 text-muted-foreground">Загрузка...</div>
+            ) : transactions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">Нет транзакций</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left text-muted-foreground">
+                      <th className="py-2 pr-4 font-medium">Дата</th>
+                      <th className="py-2 pr-4 font-medium">Тип</th>
+                      <th className="py-2 pr-4 font-medium">Сумма</th>
+                      <th className="py-2 pr-4 font-medium">Заказ</th>
+                      <th className="py-2 pr-4 font-medium">Примечание</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transactions.map((tx) => (
+                      <tr key={tx.id} className="border-b border-border">
+                        <td className="py-2 pr-4 whitespace-nowrap">
+                          {new Date(tx.created_at).toLocaleString('ru-RU')}
+                        </td>
+                        <td className="py-2 pr-4">
+                          <span className={`px-2 py-1 rounded text-xs ${TX_TYPE_BADGE[tx.tx_type]}`}>
+                            {TX_TYPE_LABELS[tx.tx_type] ?? tx.tx_type}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-4 whitespace-nowrap font-medium">
+                          {parseFloat(tx.amount).toFixed(2)} сум
+                        </td>
+                        <td className="py-2 pr-4 whitespace-nowrap">
+                          {tx.order_number || '—'}
+                        </td>
+                        <td className="py-2 pr-4">{tx.note || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {txTotalCount > txPageSize && (
+            <div className="px-6 py-3 border-t border-border flex items-center justify-between shrink-0">
+              <span className="text-sm text-muted-foreground">
+                Всего: {txTotalCount}
+              </span>
+              <div className="flex gap-2 items-center">
+                <button
+                  type="button"
+                  disabled={txPage <= 1}
+                  onClick={() => setTxPage((p) => Math.max(1, p - 1))}
+                  className="px-3 py-1 rounded border border-border disabled:opacity-50 hover:bg-muted"
+                >
+                  Назад
+                </button>
+                <span className="text-sm">
+                  {txPage} / {txTotalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={txPage >= txTotalPages}
+                  onClick={() => setTxPage((p) => p + 1)}
+                  className="px-3 py-1 rounded border border-border disabled:opacity-50 hover:bg-muted"
+                >
+                  Далее
+                </button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
