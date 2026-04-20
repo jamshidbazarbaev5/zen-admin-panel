@@ -3,13 +3,17 @@ import api from './api';
 
 export interface Staff {
   id?: number;
+  device?: number;
+  device_name?: string;
   hikvision_id: number;
   name: string;
-  position: 'barista' | 'cook' | 'waiter' | 'cashier' | 'admin';
+  position: 'barista' | 'cook' | 'waiter' | 'cashier' | 'admin' | '';
   is_active: boolean;
-  username?: string;
+  username?: string | null;
   password?: string;
   created_at?: string;
+  is_at_work?: boolean;
+  at_work_since?: string | null;
 }
 
 export interface StaffResponse {

@@ -43,7 +43,7 @@ export default function StaffPage() {
     {
       header: t('staff.position'),
       accessorKey: 'position',
-      cell: (row: Staff) => t(`staff.positions.${row.position}`),
+      cell: (row: Staff) => row.position ? t(`staff.positions.${row.position}`) : '—',
     },
     {
       header: t('staff.username'),
@@ -57,6 +57,27 @@ export default function StaffPage() {
         <span className={`px-2 py-1 rounded-full text-xs ${row.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
           {row.is_active ? t('staff.active') : t('staff.inactive')}
         </span>
+      ),
+    },
+    {
+      header: t('staff.atWork'),
+      accessorKey: 'is_at_work',
+      cell: (row: Staff) => (
+        <div className="flex flex-col">
+          <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold w-fit ${
+            row.is_at_work
+              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/25'
+              : 'bg-muted text-muted-foreground ring-1 ring-border'
+          }`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${row.is_at_work ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground'}`} />
+            {row.is_at_work ? t('staff.atWorkYes') : t('staff.atWorkNo')}
+          </span>
+          {row.is_at_work && row.at_work_since && (
+            <span className="text-xs text-muted-foreground mt-1">
+              {t('staff.since')}: {new Date(row.at_work_since).toLocaleString('ru-RU')}
+            </span>
+          )}
+        </div>
       ),
     },
     {
