@@ -97,7 +97,8 @@ export default function AttendancePage() {
     {
       header: t('attendance.position'),
       accessorKey: 'staff_position',
-      cell: (row: AttendanceSession) => row.staff_position || '—',
+      cell: (row: AttendanceSession) =>
+        row.staff_position ? t(`staff.positions.${row.staff_position}`, row.staff_position) : '—',
     },
     {
       header: t('attendance.checkIn'),
