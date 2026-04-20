@@ -1,3 +1,4 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createResourceApiHooks } from '../helpers/createResourceApi';
 import api from './api';
 
@@ -29,9 +30,26 @@ export const {
   useGetResources: useGetStaff,
   useGetResource: useGetStaffMember,
   useCreateResource: useCreateStaff,
-  useUpdateResource: useUpdateStaff,
   useDeleteResource: useDeleteStaff,
 } = createResourceApiHooks<Staff, StaffResponse>(STAFF_URL, 'staff');
+
+export const useUpdateStaff = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: Partial<Staff> & { id: number }) => {
+      const { id, ...body } = payload;
+      const response = await api.patch<Staff>(`${STAFF_URL}${id}/`, body);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['staff'] });
+      if (data.id) {
+        queryClient.invalidateQueries({ queryKey: ['staff', data.id] });
+      }
+    },
+  });
+};
 
 export const useSetStaffPassword = () => {
   return async (id: number, password: string) => {

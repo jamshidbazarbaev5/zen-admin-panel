@@ -406,7 +406,9 @@ export function ResourceForm<T extends Record<string, any>>({
                 disabled={isSubmitting} 
                 className="min-w-[140px] h-10 bg-blue-600 hover:bg-blue-700 text-white"
               >
-                {isSubmitting ? t("common.sending") : t("common.submit")}
+                {isSubmitting ? t("common.sending") : 
+                  'Отправить'
+                }
               </Button>
             )}
           </div>

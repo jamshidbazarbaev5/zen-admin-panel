@@ -120,12 +120,11 @@ export default function StaffPage() {
     updateStaff.mutate(
       {
         id: editingStaff.id,
-        hikvision_id: editingStaff.hikvision_id,
         name: data.name,
         position: data.position,
         is_active: data.is_active !== false,
-        username: data.username || undefined,
-      } as Staff,
+        username: data.username || null,
+      },
       {
         onSuccess: () => {
           toast.success(t('staff.updateSuccess'));
