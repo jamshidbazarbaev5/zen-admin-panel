@@ -5,7 +5,7 @@ import {
   useGetCashbackTiers,
   useCreateCashbackTier,
   useUpdateCashbackTier,
-  useDeleteCashbackTier,
+  // useDeleteCashbackTier,
   type CashbackTier,
 } from '../api/cashbackTier';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
@@ -43,7 +43,7 @@ export default function CashbackTiersPage() {
   const { data: tiersData, isLoading } = useGetCashbackTiers({ params: { page: currentPage } });
   const createTier = useCreateCashbackTier();
   const updateTier = useUpdateCashbackTier();
-  const deleteTier = useDeleteCashbackTier();
+  // const deleteTier = useDeleteCashbackTier();
 
   const tiers = tiersData?.results || [];
   const totalCount = tiersData?.count || 0;
