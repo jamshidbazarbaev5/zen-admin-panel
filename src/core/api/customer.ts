@@ -7,6 +7,7 @@ export interface Customer {
   phone: string;
   lang: string;
   balance: string;
+  deposit_balance: string;
   total_spent: string;
   is_active: boolean;
   orders_count: number;

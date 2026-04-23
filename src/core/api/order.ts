@@ -39,6 +39,8 @@ export interface Order {
   delivery_longitude: number | null;
   total_amount: string;
   balance_used: string;
+  cashback_used: string;
+  deposit_used: string;
   online_paid: string;
   pickup_time: string;
   prep_minutes: number;

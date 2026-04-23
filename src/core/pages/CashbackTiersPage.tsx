@@ -11,8 +11,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
-import { DeleteConfirmationModal } from '../components/modals/DeleteConfirmationModal';
-
+  
 const columns = [
   {
     header: 'Название',
@@ -40,7 +39,6 @@ export default function CashbackTiersPage() {
   const [editingTier, setEditingTier] = useState<CashbackTier | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [deletingTier, setDeletingTier] = useState<CashbackTier | null>(null);
 
   const { data: tiersData, isLoading } = useGetCashbackTiers({ params: { page: currentPage } });
   const createTier = useCreateCashbackTier();
@@ -50,10 +48,7 @@ export default function CashbackTiersPage() {
   const tiers = tiersData?.results || [];
   const totalCount = tiersData?.count || 0;
 
-  const handleEdit = (tier: CashbackTier) => {
-    setEditingTier(tier);
-    setIsEditDialogOpen(true);
-  };
+ 
 
   const handleCreate = (data: any) => {
     createTier.mutate(
@@ -99,19 +94,6 @@ export default function CashbackTiersPage() {
     );
   };
 
-  const handleDelete = () => {
-    if (!deletingTier?.id) return;
-
-    deleteTier.mutate(deletingTier.id, {
-      onSuccess: () => {
-        toast.success('Уровень кэшбэка успешно удален');
-        setDeletingTier(null);
-      },
-      onError: () => {
-        toast.error('Ошибка при удалении уровня кэшбэка');
-      },
-    });
-  };
 
   const formFields = [
     {
@@ -154,11 +136,7 @@ export default function CashbackTiersPage() {
         data={tiers}
         columns={columns}
         isLoading={isLoading}
-        onEdit={handleEdit}
-        onDelete={(id) => {
-          const tier = tiers.find(t => t.id === id);
-          if (tier) setDeletingTier(tier);
-        }}
+      
         totalCount={totalCount}
         pageSize={20}
         currentPage={currentPage}
@@ -196,13 +174,7 @@ export default function CashbackTiersPage() {
         </DialogContent>
       </Dialog>
 
-      <DeleteConfirmationModal
-        isOpen={!!deletingTier}
-        onClose={() => setDeletingTier(null)}
-        onConfirm={handleDelete}
-        title="Удалить уровень кэшбэка"
-        description={`Вы уверены, что хотите удалить уровень "${deletingTier?.name}"?`}
-      />
+    
     </div>
   );
 }

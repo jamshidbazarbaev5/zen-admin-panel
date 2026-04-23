@@ -465,15 +465,23 @@ export default function OrdersPage() {
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Общая сумма</p>
-                    <p className="text-base">{parseFloat(detailOrder.total_amount).toFixed(2)} сум</p>
+                    <p className="text-base">{parseFloat(detailOrder.total_amount || '0').toFixed(2)} сум</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Использовано баланса</p>
-                    <p className="text-base">{parseFloat(detailOrder.balance_used).toFixed(2)} сум</p>
+                    <p className="text-base">{parseFloat(detailOrder.balance_used || '0').toFixed(2)} сум</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Оплачено онлайн</p>
-                    <p className="text-base">{parseFloat(detailOrder.online_paid).toFixed(2)} сум</p>
+                    <p className="text-base">{parseFloat(detailOrder.online_paid || '0').toFixed(2)} сум</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Использовано кэшбэка</p>
+                    <p className="text-base">{parseFloat(detailOrder.cashback_used || '0').toFixed(2)} сум</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Использовано депозита</p>
+                    <p className="text-base">{parseFloat(detailOrder.deposit_used || '0').toFixed(2)} сум</p>
                   </div>
                 </div>
               </div>

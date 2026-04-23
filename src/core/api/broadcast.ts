@@ -13,6 +13,7 @@ export interface Broadcast {
   created_at: string;
 }
 
+
 export interface BroadcastFormData {
   text: string;
   media?: File | null;

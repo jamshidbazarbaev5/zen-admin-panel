@@ -38,6 +38,11 @@ const columns = [
     cell: (row: Customer) => `${parseFloat(row.balance).toFixed(2)} сум`,
   },
   {
+    header: 'Депозит',
+    accessorKey: 'deposit_balance',
+    cell: (row: Customer) => `${parseFloat(row.deposit_balance).toFixed(2)} сум`,
+  },
+  {
     header: 'Потрачено',
     accessorKey: 'total_spent',
     cell: (row: Customer) => `${parseFloat(row.total_spent).toFixed(2)} сум`,
