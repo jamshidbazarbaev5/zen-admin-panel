@@ -46,7 +46,7 @@ interface DashboardData {
     delivery: { count: number; revenue: string };
   };
   tiers: { name: string; customer_count: number }[];
-  top_products: { name?: string; quantity?: number; revenue?: string }[];
+  top_products: { name?: string; qty?: number; quantity?: number; revenue?: string }[];
   customers: { total: number; new_in_range: number };
 }
 
@@ -338,11 +338,11 @@ function TopProducts({ products }: { products: DashboardData['top_products'] }) 
       </div>
     );
   }
-  const max = Math.max(...products.map((p) => Number(p.quantity || 0)), 1);
+  const max = Math.max(...products.map((p) => Number(p.qty ?? p.quantity ?? 0)), 1);
   return (
     <div className="space-y-2.5">
       {products.slice(0, 5).map((p, i) => {
-        const qty = Number(p.quantity || 0);
+        const qty = Number(p.qty ?? p.quantity ?? 0);
         return (
           <div key={i}>
             <div className="mb-1 flex items-center justify-between text-xs">
