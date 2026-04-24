@@ -58,16 +58,21 @@ const columns = [
   },
 ];
 
-const TX_TYPE_LABELS: Record<BalanceTransactionType, string> = {
-  deposit: 'Пополнение',
-  cashback: 'Кэшбэк',
-  spend: 'Списание',
-};
+const TX_TYPE_FILTERS: { value: '' | BalanceTransactionType; label: string }[] = [
+  { value: '', label: 'Все' },
+  { value: 'deposit_topup', label: 'Пополнение депозита' },
+  { value: 'deposit_spent', label: 'Списано с депозита' },
+  { value: 'cashback_earned', label: 'Начислен кэшбэк' },
+  { value: 'cashback_spent', label: 'Списан кэшбэк' },
+  { value: 'other', label: 'Прочее' },
+];
 
-const TX_TYPE_BADGE: Record<BalanceTransactionType, string> = {
-  deposit: 'bg-green-100 text-green-800',
-  cashback: 'bg-blue-100 text-blue-800',
-  spend: 'bg-red-100 text-red-800',
+const TX_TYPE_BADGE: Record<string, string> = {
+  deposit_topup: 'bg-green-100 text-green-800',
+  deposit_spent: 'bg-red-100 text-red-800',
+  cashback_earned: 'bg-blue-100 text-blue-800',
+  cashback_spent: 'bg-orange-100 text-orange-800',
+  other: 'bg-gray-100 text-gray-800',
 };
 
 export default function CustomersPage() {
@@ -228,7 +233,7 @@ export default function CustomersPage() {
       </Dialog>
 
       <Dialog open={isTxDialogOpen} onOpenChange={setIsTxDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 bg-card">
+        <DialogContent className="!max-w-[95vw] w-[95vw] max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 bg-card">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0 bg-muted/50">
             <DialogTitle className="text-foreground">
               Транзакции баланса
@@ -241,18 +246,18 @@ export default function CustomersPage() {
           </DialogHeader>
 
           <div className="px-6 py-4 border-b border-border flex gap-2 flex-wrap">
-            {(['', 'deposit', 'cashback', 'spend'] as const).map((type) => (
+            {TX_TYPE_FILTERS.map(({ value, label }) => (
               <button
-                key={type || 'all'}
+                key={value || 'all'}
                 type="button"
-                onClick={() => setTxTypeFilter(type as BalanceTransactionType | '')}
+                onClick={() => setTxTypeFilter(value)}
                 className={`px-3 py-1.5 rounded text-sm border transition-colors ${
-                  txTypeFilter === type
+                  txTypeFilter === value
                     ? 'bg-primary text-primary-foreground border-primary'
                     : 'bg-background text-foreground border-border hover:bg-muted'
                 }`}
               >
-                {type === '' ? 'Все' : TX_TYPE_LABELS[type as BalanceTransactionType]}
+                {label}
               </button>
             ))}
           </div>
@@ -269,31 +274,50 @@ export default function CustomersPage() {
                     <tr className="border-b border-border text-left text-muted-foreground">
                       <th className="py-2 pr-4 font-medium">Дата</th>
                       <th className="py-2 pr-4 font-medium">Тип</th>
+                      <th className="py-2 pr-4 font-medium">Канал</th>
                       <th className="py-2 pr-4 font-medium">Сумма</th>
+                      <th className="py-2 pr-4 font-medium">Баланс после</th>
                       <th className="py-2 pr-4 font-medium">Заказ</th>
+                      <th className="py-2 pr-4 font-medium">Уровень</th>
                       <th className="py-2 pr-4 font-medium">Примечание</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {transactions.map((tx) => (
-                      <tr key={tx.id} className="border-b border-border">
-                        <td className="py-2 pr-4 whitespace-nowrap">
-                          {new Date(tx.created_at).toLocaleString('ru-RU')}
-                        </td>
-                        <td className="py-2 pr-4">
-                          <span className={`px-2 py-1 rounded text-xs ${TX_TYPE_BADGE[tx.tx_type]}`}>
-                            {TX_TYPE_LABELS[tx.tx_type] ?? tx.tx_type}
-                          </span>
-                        </td>
-                        <td className="py-2 pr-4 whitespace-nowrap font-medium">
-                          {parseFloat(tx.amount).toFixed(2)} сум
-                        </td>
-                        <td className="py-2 pr-4 whitespace-nowrap">
-                          {tx.order_number || '—'}
-                        </td>
-                        <td className="py-2 pr-4">{tx.note || '—'}</td>
-                      </tr>
-                    ))}
+                    {transactions.map((tx) => {
+                      const orderLabel =
+                        tx.order_number ||
+                        (tx.iiko_order_number != null ? `№${tx.iiko_order_number}` : '—');
+                      return (
+                        <tr key={tx.id} className="border-b border-border">
+                          <td className="py-2 pr-4 whitespace-nowrap">
+                            {new Date(tx.created_at).toLocaleString('ru-RU')}
+                          </td>
+                          <td className="py-2 pr-4">
+                            <span
+                              className={`px-2 py-1 rounded text-xs ${
+                                TX_TYPE_BADGE[tx.tx_type] ?? TX_TYPE_BADGE.other
+                              }`}
+                            >
+                              {tx.tx_type_display || tx.tx_type}
+                            </span>
+                          </td>
+                          <td className="py-2 pr-4 whitespace-nowrap text-muted-foreground">
+                            {tx.channel_display || '—'}
+                          </td>
+                          <td className="py-2 pr-4 whitespace-nowrap font-medium">
+                            {parseFloat(tx.amount).toFixed(2)} сум
+                          </td>
+                          <td className="py-2 pr-4 whitespace-nowrap">
+                            {parseFloat(tx.balance_after).toFixed(2)} сум
+                          </td>
+                          <td className="py-2 pr-4 whitespace-nowrap">{orderLabel}</td>
+                          <td className="py-2 pr-4 whitespace-nowrap">
+                            {tx.tier_at_time || '—'}
+                          </td>
+                          <td className="py-2 pr-4">{tx.note || '—'}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

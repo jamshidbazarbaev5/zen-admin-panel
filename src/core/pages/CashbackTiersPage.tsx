@@ -3,13 +3,11 @@ import { ResourceTable } from '../helpers/ResourceTable';
 import { ResourceForm } from '../helpers/ResourceForm';
 import {
   useGetCashbackTiers,
-  useCreateCashbackTier,
   useUpdateCashbackTier,
   // useDeleteCashbackTier,
   type CashbackTier,
 } from '../api/cashbackTier';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
-import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
   
 const columns = [
@@ -38,10 +36,8 @@ export default function CashbackTiersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [editingTier, setEditingTier] = useState<CashbackTier | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   const { data: tiersData, isLoading } = useGetCashbackTiers({ params: { page: currentPage } });
-  const createTier = useCreateCashbackTier();
   const updateTier = useUpdateCashbackTier();
   // const deleteTier = useDeleteCashbackTier();
 
@@ -50,25 +46,7 @@ export default function CashbackTiersPage() {
 
  
 
-  const handleCreate = (data: any) => {
-    createTier.mutate(
-      {
-        name: data.name,
-        min_spent: data.min_spent,
-        max_spent: data.max_spent || null,
-        percent: data.percent,
-      } as CashbackTier,
-      {
-        onSuccess: () => {
-          toast.success('Уровень кэшбэка успешно создан');
-          setIsCreateDialogOpen(false);
-        },
-        onError: () => {
-          toast.error('Ошибка при создании уровня кэшбэка');
-        },
-      }
-    );
-  };
+  
 
   const handleUpdate = (data: any) => {
     if (!editingTier?.id) return;
@@ -127,10 +105,7 @@ export default function CashbackTiersPage() {
 
   return (
     <div className="container mx-auto py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Уровни кэшбэка</h1>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>Создать уровень</Button>
-      </div>
+     
 
       <ResourceTable
         data={tiers}
@@ -143,20 +118,7 @@ export default function CashbackTiersPage() {
         onPageChange={setCurrentPage}
       />
 
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 bg-card">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0 bg-muted/50">
-            <DialogTitle className="text-foreground">Создать уровень кэшбэка</DialogTitle>
-          </DialogHeader>
-          <div className="overflow-y-auto flex-1 px-6 py-6 bg-card">
-            <ResourceForm
-              fields={formFields}
-              onSubmit={handleCreate}
-              isSubmitting={createTier.isPending}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+    
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 bg-card">
