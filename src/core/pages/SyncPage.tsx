@@ -7,13 +7,14 @@ import { RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../api/api';
 
-type SyncTarget = 
-  | 'organizations' 
-  | 'terminal_groups' 
-  | 'payment_types' 
-  | 'tables' 
-  | 'menu' 
-  | 'stop_lists';
+type SyncTarget =
+  | 'organizations'
+  | 'terminal_groups'
+  | 'payment_types'
+  | 'tables'
+  | 'menu'
+  | 'stop_lists'
+  | 'tiers';
 
 interface SyncTargetOption {
   id: SyncTarget;
@@ -33,6 +34,7 @@ export default function SyncPage() {
     { id: 'tables', labelKey: 'sync.tables' },
     { id: 'menu', labelKey: 'sync.menu' },
     { id: 'stop_lists', labelKey: 'sync.stopLists' },
+    { id: 'tiers', labelKey: 'sync.tiers' },
   ];
 
   const handleToggleTarget = (targetId: SyncTarget) => {
