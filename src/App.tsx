@@ -89,7 +89,7 @@ function App() {
       <ThemeProvider>
         <LanguageProvider>
           <AuthProvider>
-            <BrowserRouter>
+            <BrowserRouter basename="/admin-panel">
               <Routes>
                 <Route path="/login" element={<LoginPage />} />
                 <Route
