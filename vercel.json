@@ -1,8 +1,7 @@
 {
   "rewrites": [
-    {
-      "source": "/admin-panel/((?!assets/).*)",
-      "destination": "/admin-panel/index.html"
-    }
+    { "source": "/admin-panel/assets/(.*)", "destination": "/assets/$1" },
+    { "source": "/admin-panel/(.*)", "destination": "/index.html" },
+    { "source": "/admin-panel", "destination": "/index.html" }
   ]
 }
