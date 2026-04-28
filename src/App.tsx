@@ -24,6 +24,7 @@ import BusinessSettingsPage from './core/pages/BusinessSettingsPage';
 import ReviewsPage from './core/pages/ReviewsPage';
 import BranchesPage from './core/pages/BranchesPage';
 import PolicyPage from './core/pages/PolicyPage';
+import PolicyAcceptancesPage from './core/pages/PolicyAcceptancesPage';
 import ModifiersPage from './core/pages/ModifiersPage';
 // import SettingsPage from './core/pages/SettingsPage';
 import { Toaster } from 'sonner';
@@ -252,6 +253,14 @@ function App() {
                   element={
                     <AdminRoute>
                       <ModifiersPage />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/policy-acceptances"
+                  element={
+                    <AdminRoute>
+                      <PolicyAcceptancesPage />
                     </AdminRoute>
                   }
                 />

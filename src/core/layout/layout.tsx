@@ -247,6 +247,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       label: "Политика",
       href: "/policy",
     },
+    {
+      icon: ClipboardList,
+      label: "Принятие политики",
+      href: "/policy-acceptances",
+    },
     // {
     //   icon: Settings,
     //   label: "Настройки",
