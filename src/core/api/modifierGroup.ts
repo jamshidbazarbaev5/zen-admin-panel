@@ -49,6 +49,13 @@ export interface ModifierBulkUpdate {
 const MODIFIER_GROUP_URL = '/modifier-groups/';
 const MODIFIER_URL = '/modifiers/';
 
+export interface ModifierResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Modifier[];
+}
+
 export const {
   useGetResources: useGetModifierGroups,
   useGetResource: useGetModifierGroup,
@@ -56,6 +63,14 @@ export const {
   useUpdateResource: useUpdateModifierGroup,
   useDeleteResource: useDeleteModifierGroup,
 } = createResourceApiHooks<ModifierGroup, ModifierGroupResponse>(MODIFIER_GROUP_URL, 'modifierGroups');
+
+export const {
+  useGetResources: useGetModifiers,
+  useGetResource: useGetModifier,
+  useCreateResource: useCreateModifier,
+  useUpdateResource: useUpdateModifier,
+  useDeleteResource: useDeleteModifier,
+} = createResourceApiHooks<Modifier, ModifierResponse>(MODIFIER_URL, 'modifiers');
 
 export const useBulkUpdateModifierGroups = () => {
   const queryClient = useQueryClient();

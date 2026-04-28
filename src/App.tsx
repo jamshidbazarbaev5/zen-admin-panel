@@ -22,6 +22,9 @@ import StaffPage from './core/pages/StaffPage';
 import AttendancePage from './core/pages/AttendancePage';
 import BusinessSettingsPage from './core/pages/BusinessSettingsPage';
 import ReviewsPage from './core/pages/ReviewsPage';
+import BranchesPage from './core/pages/BranchesPage';
+import PolicyPage from './core/pages/PolicyPage';
+import ModifiersPage from './core/pages/ModifiersPage';
 // import SettingsPage from './core/pages/SettingsPage';
 import { Toaster } from 'sonner';
 import './App.css';
@@ -225,6 +228,30 @@ function App() {
                   element={
                     <AdminRoute>
                       <ReviewsPage />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/branches"
+                  element={
+                    <AdminRoute>
+                      <BranchesPage />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/policy"
+                  element={
+                    <AdminRoute>
+                      <PolicyPage />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/modifiers"
+                  element={
+                    <AdminRoute>
+                      <ModifiersPage />
                     </AdminRoute>
                   }
                 />

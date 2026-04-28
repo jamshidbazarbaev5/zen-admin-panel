@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ResourceTable } from '../helpers/ResourceTable';
 import { ResourceForm } from '../helpers/ResourceForm';
-import { useGetProducts, useUpdateProduct, useBulkUpdateProducts, type Product, type ProductBulkUpdate } from '../api/product';
+import { useGetProducts, useUpdateProduct, useDeleteProduct, useBulkUpdateProducts, type Product, type ProductBulkUpdate } from '../api/product';
 import { useGetCategories } from '../api/category';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
@@ -296,7 +296,15 @@ export default function ProductsPage() {
   const categoriesParams: Record<string, any> = {};
   const { data: categoriesData } = useGetCategories({ params: categoriesParams });
   const updateProduct = useUpdateProduct();
+  const deleteProduct = useDeleteProduct();
   const bulkUpdate = useBulkUpdateProducts();
+
+  const handleDelete = (id: number) => {
+    deleteProduct.mutate(id, {
+      onSuccess: () => toast.success('Продукт удалён'),
+      onError: () => toast.error('Ошибка при удалении продукта'),
+    });
+  };
 
   useEffect(() => {
     setCurrentPage(1);
@@ -518,6 +526,7 @@ export default function ProductsPage() {
         columns={columns}
         isLoading={isLoading}
         onEdit={editMode ? undefined : handleEdit}
+        onDelete={editMode ? undefined : handleDelete}
         totalCount={totalCount}
         pageSize={20}
         currentPage={currentPage}

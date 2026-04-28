@@ -9,6 +9,7 @@ import {
   Settings,
   ShoppingCart,
   CreditCard,
+  MapPin,
   Award,
   Radio,
   Building2,
@@ -18,6 +19,8 @@ import {
   UserCheck,
   ClipboardList,
   MessageSquare,
+  FileText,
+  Sliders,
   User as UserIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -165,6 +168,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       href: "/modifier-groups",
     },
     {
+      icon: Sliders,
+      label: "Модификаторы",
+      href: "/modifiers",
+    },
+    {
       icon: ShoppingCart,
       label: "Заказы",
       href: "/orders",
@@ -205,6 +213,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       href: "/terminal-groups",
     },
     {
+      icon: MapPin,
+      label: t("branches.title"),
+      href: "/branches",
+    },
+    {
       icon: Wallet,
       label: "Типы оплаты",
       href: "/payment-types",
@@ -228,6 +241,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       icon: Settings,
       label: "Настройки бизнеса",
       href: "/business-settings",
+    },
+    {
+      icon: FileText,
+      label: "Политика",
+      href: "/policy",
     },
     // {
     //   icon: Settings,
@@ -406,9 +424,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     onClick={(e) => {
                       e.preventDefault();
                       setMobileMenuOpen(false);
-                      if (item.href === '/dashboard') {
-                        window.location.href = '/dashboard';
-                      } else if (item.href) {
+                      if (item.href) {
                         navigate(item.href);
                       }
                     }}

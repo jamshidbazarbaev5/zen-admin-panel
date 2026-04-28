@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ResourceTable } from '../helpers/ResourceTable';
 import { ResourceForm } from '../helpers/ResourceForm';
-import { useGetCategories, useUpdateCategory, useBulkUpdateCategories, type Category, type CategoryBulkUpdate } from '../api/category';
+import { useGetCategories, useUpdateCategory, useDeleteCategory, useBulkUpdateCategories, type Category, type CategoryBulkUpdate } from '../api/category';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
@@ -90,7 +90,15 @@ export default function CategoriesPage() {
   const { data: categoriesData, isLoading } = useGetCategories({ params });
 
   const updateCategory = useUpdateCategory();
+  const deleteCategory = useDeleteCategory();
   const bulkUpdate = useBulkUpdateCategories();
+
+  const handleDelete = (id: number) => {
+    deleteCategory.mutate(id, {
+      onSuccess: () => toast.success('Категория удалена'),
+      onError: () => toast.error('Ошибка при удалении категории'),
+    });
+  };
 
   useEffect(() => {
     setCurrentPage(1);
@@ -250,6 +258,7 @@ export default function CategoriesPage() {
         columns={columns}
         isLoading={isLoading}
         onEdit={editMode ? undefined : handleEdit}
+        onDelete={editMode ? undefined : handleDelete}
         totalCount={totalCount}
         pageSize={20}
         currentPage={currentPage}

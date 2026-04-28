@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ResourceTable } from '../helpers/ResourceTable';
 import { useGetOrders, useGetOrder, type Order } from '../api/order';
+import { useGetBranches } from '../api/branch';
 import { Input } from '../../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { getAccessToken } from '../api/auth';
@@ -87,6 +88,9 @@ export default function OrdersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [orderTypeFilter, setOrderTypeFilter] = useState<string>('');
+  const [branchFilter, setBranchFilter] = useState<string>('');
+  const [fromDate, setFromDate] = useState<string>('');
+  const [toDate, setToDate] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
@@ -107,12 +111,17 @@ export default function OrdersPage() {
   if (searchTerm) params.search = searchTerm;
   if (statusFilter) params.status = statusFilter;
   if (orderTypeFilter) params.order_type = orderTypeFilter;
+  if (branchFilter) params.branch = branchFilter;
+  if (fromDate) params.from = fromDate;
+  if (toDate) params.to = toDate;
 
   const { data: ordersData, isLoading, refetch } = useGetOrders({ params });
+  const { data: branchesData } = useGetBranches({ params: { is_active: true } });
+  const branches = branchesData?.results || [];
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, orderTypeFilter]);
+  }, [searchTerm, statusFilter, orderTypeFilter, branchFilter, fromDate, toDate]);
 
   // Initialize audio for notifications
   useEffect(() => {
@@ -279,16 +288,16 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      <div className="mb-4 flex gap-4">
+      <div className="mb-4 flex flex-wrap gap-4">
         <Input
           type="text"
           placeholder="Поиск по номеру, клиенту..."
-          className="flex-1"
+          className="flex-1 min-w-[200px]"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
         <select
-          className="p-2 border rounded"
+          className="px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
@@ -300,7 +309,7 @@ export default function OrdersPage() {
           ))}
         </select>
         <select
-          className="p-2 border rounded"
+          className="px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           value={orderTypeFilter}
           onChange={(e) => setOrderTypeFilter(e.target.value)}
         >
@@ -308,6 +317,45 @@ export default function OrdersPage() {
           <option value="pickup">Самовывоз</option>
           <option value="delivery">Доставка</option>
         </select>
+        <select
+          className="px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          value={branchFilter}
+          onChange={(e) => setBranchFilter(e.target.value)}
+        >
+          <option value="">Все филиалы</option>
+          {branches.map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.name}
+            </option>
+          ))}
+        </select>
+        <Input
+          type="date"
+          className="w-[170px]"
+          value={fromDate}
+          onChange={(e) => setFromDate(e.target.value)}
+          title="С даты"
+        />
+        <Input
+          type="date"
+          className="w-[170px]"
+          value={toDate}
+          onChange={(e) => setToDate(e.target.value)}
+          title="По дату"
+        />
+        {(fromDate || toDate || branchFilter) && (
+          <button
+            type="button"
+            onClick={() => {
+              setFromDate('');
+              setToDate('');
+              setBranchFilter('');
+            }}
+            className="px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground hover:bg-muted"
+          >
+            Сбросить
+          </button>
+        )}
       </div>
 
       <ResourceTable

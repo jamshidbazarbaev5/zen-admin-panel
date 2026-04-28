@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react';
 import { ResourceTable } from '../helpers/ResourceTable';
 import { ResourceForm } from '../helpers/ResourceForm';
-import { useGetModifierGroups, useUpdateModifierGroup, useDeleteModifierGroup, useBulkUpdateModifierGroups, type ModifierGroup, type ModifierGroupBulkUpdate } from '../api/modifierGroup';
+import {
+  useGetModifiers,
+  useUpdateModifier,
+  useDeleteModifier,
+  useBulkUpdateModifiers,
+  useGetModifierGroups,
+  type Modifier,
+  type ModifierBulkUpdate,
+} from '../api/modifierGroup';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
@@ -11,21 +19,22 @@ import { Save } from 'lucide-react';
 
 const createColumns = (
   editMode: boolean,
-  editedData: Map<number, Partial<ModifierGroup>>,
-  onFieldChange: (id: number, field: keyof ModifierGroup, value: any) => void
+  editedData: Map<number, Partial<Modifier>>,
+  onFieldChange: (id: number, field: keyof Modifier, value: any) => void,
 ) => [
   {
     header: 'Название (RU)',
-    accessorKey: 'name_ru',
+    accessorKey: 'name_ru' as keyof Modifier,
   },
   {
-    header: 'Модификаторов',
-    accessorKey: 'modifiers_count',
+    header: 'Цена',
+    accessorKey: 'price' as keyof Modifier,
+    cell: (row: Modifier) => `${parseFloat(row.price || '0').toFixed(2)} сум`,
   },
   {
     header: 'Порядок',
-    accessorKey: 'order',
-    cell: (row: ModifierGroup) => {
+    accessorKey: 'order' as keyof Modifier,
+    cell: (row: Modifier) => {
       if (!editMode) return row.order;
       const edited = editedData.get(row.id!);
       return (
@@ -40,12 +49,16 @@ const createColumns = (
   },
   {
     header: 'Активность',
-    accessorKey: 'is_active',
-    cell: (row: ModifierGroup) => {
+    accessorKey: 'is_active' as keyof Modifier,
+    cell: (row: Modifier) => {
       if (!editMode) {
         return (
-          <span className={`px-2 py-1 rounded text-xs ${row.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-            {row.is_active ? 'Активна' : 'Неактивна'}
+          <span
+            className={`px-2 py-1 rounded text-xs ${
+              row.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            }`}
+          >
+            {row.is_active ? 'Активен' : 'Неактивен'}
           </span>
         );
       }
@@ -60,38 +73,35 @@ const createColumns = (
   },
 ];
 
-export default function ModifierGroupsPage() {
+export default function ModifiersPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [groupFilter, setGroupFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [editingGroup, setEditingGroup] = useState<ModifierGroup | null>(null);
+  const [editingModifier, setEditingModifier] = useState<Modifier | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [editedData, setEditedData] = useState<Map<number, Partial<ModifierGroup>>>(new Map());
+  const [editedData, setEditedData] = useState<Map<number, Partial<Modifier>>>(new Map());
 
   const params: Record<string, any> = { page: currentPage };
   if (searchTerm) params.search = searchTerm;
+  if (groupFilter) params.modifier_group = groupFilter;
 
-  const { data: groupsData, isLoading } = useGetModifierGroups({ params });
-  const updateGroup = useUpdateModifierGroup();
-  const deleteGroup = useDeleteModifierGroup();
-  const bulkUpdate = useBulkUpdateModifierGroups();
-
-  const handleDelete = (id: number) => {
-    deleteGroup.mutate(id, {
-      onSuccess: () => toast.success('Группа модификаторов удалена'),
-      onError: () => toast.error('Ошибка при удалении группы модификаторов'),
-    });
-  };
+  const { data: modifiersData, isLoading } = useGetModifiers({ params });
+  const { data: groupsData } = useGetModifierGroups({ params: {} });
+  const updateModifier = useUpdateModifier();
+  const deleteModifier = useDeleteModifier();
+  const bulkUpdate = useBulkUpdateModifiers();
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, groupFilter]);
 
+  const modifiers = modifiersData?.results || [];
+  const totalCount = modifiersData?.count || 0;
   const groups = groupsData?.results || [];
-  const totalCount = groupsData?.count || 0;
 
-  const handleFieldChange = (id: number, field: keyof ModifierGroup, value: any) => {
-    setEditedData(prev => {
+  const handleFieldChange = (id: number, field: keyof Modifier, value: any) => {
+    setEditedData((prev) => {
       const newMap = new Map(prev);
       const existing = newMap.get(id) || {};
       newMap.set(id, { ...existing, [field]: value });
@@ -100,8 +110,8 @@ export default function ModifierGroupsPage() {
   };
 
   const handleBulkSave = () => {
-    const updates: ModifierGroupBulkUpdate[] = Array.from(editedData.entries()).map(([id, changes]) => {
-      const original = groups.find(g => g.id === id)!;
+    const updates: ModifierBulkUpdate[] = Array.from(editedData.entries()).map(([id, changes]) => {
+      const original = modifiers.find((m) => m.id === id)!;
       return {
         id,
         order: changes.order ?? original.order,
@@ -111,39 +121,46 @@ export default function ModifierGroupsPage() {
 
     bulkUpdate.mutate(updates, {
       onSuccess: () => {
-        toast.success('Группы модификаторов успешно обновлены');
+        toast.success('Модификаторы успешно обновлены');
         setEditMode(false);
         setEditedData(new Map());
       },
       onError: () => {
-        toast.error('Ошибка при обновлении групп модификаторов');
+        toast.error('Ошибка при обновлении модификаторов');
       },
     });
   };
 
-  const handleEdit = (group: ModifierGroup) => {
-    setEditingGroup(group);
+  const handleEdit = (modifier: Modifier) => {
+    setEditingModifier(modifier);
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdate = (data: any) => {
-    if (!editingGroup?.id) return;
+  const handleDelete = (id: number) => {
+    deleteModifier.mutate(id, {
+      onSuccess: () => toast.success('Модификатор удалён'),
+      onError: () => toast.error('Ошибка при удалении модификатора'),
+    });
+  };
 
-    updateGroup.mutate(
+  const handleUpdate = (data: any) => {
+    if (!editingModifier?.id) return;
+
+    updateModifier.mutate(
       {
-        ...editingGroup,
+        ...editingModifier,
         ...data,
       },
       {
         onSuccess: () => {
-          toast.success('Группа модификаторов успешно обновлена');
+          toast.success('Модификатор успешно обновлён');
           setIsEditDialogOpen(false);
-          setEditingGroup(null);
+          setEditingModifier(null);
         },
         onError: () => {
-          toast.error('Ошибка при обновлении группы модификаторов');
+          toast.error('Ошибка при обновлении модификатора');
         },
-      }
+      },
     );
   };
 
@@ -173,8 +190,14 @@ export default function ModifierGroupsPage() {
       placeholder: 'Введите название на английском',
     },
     {
+      name: 'price',
+      label: 'Цена',
+      type: 'text' as const,
+      placeholder: '0.00',
+    },
+    {
       name: 'is_active',
-      label: 'Активна',
+      label: 'Активен',
       type: 'checkbox' as const,
     },
     {
@@ -190,42 +213,59 @@ export default function ModifierGroupsPage() {
   return (
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Группы модификаторов</h1>
+        <h1 className="text-2xl font-bold">Модификаторы</h1>
         <div className="flex gap-2">
           {editMode ? (
             <>
-              <Button variant="outline" onClick={() => {
-                setEditMode(false);
-                setEditedData(new Map());
-              }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEditMode(false);
+                  setEditedData(new Map());
+                }}
+              >
                 Отмена
               </Button>
-              <Button onClick={handleBulkSave} disabled={editedData.size === 0 || bulkUpdate.isPending}>
+              <Button
+                onClick={handleBulkSave}
+                disabled={editedData.size === 0 || bulkUpdate.isPending}
+              >
                 <Save className="h-4 w-4 mr-2" />
                 Сохранить изменения
               </Button>
             </>
           ) : (
-            <Button onClick={() => setEditMode(true)}>
-              Редактировать таблицу
-            </Button>
+            <Button onClick={() => setEditMode(true)}>Редактировать таблицу</Button>
           )}
         </div>
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 flex gap-4">
         <Input
           type="text"
           placeholder="Поиск по названию..."
-          className="max-w-md"
+          className="flex-1"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           disabled={editMode}
         />
+        <select
+          className="p-2 border rounded bg-background text-foreground"
+          value={groupFilter}
+          onChange={(e) => setGroupFilter(e.target.value)}
+          disabled={editMode}
+        >
+          <option value="">Все группы</option>
+          {groups.map((g: any) => (
+            <option key={g.id} value={g.id}>
+              {g.name_ru}
+            </option>
+          ))}
+        </select>
       </div>
 
       <ResourceTable
-        data={groups}
+        data={modifiers}
         columns={columns}
         isLoading={isLoading}
         onEdit={editMode ? undefined : handleEdit}
@@ -239,13 +279,13 @@ export default function ModifierGroupsPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Редактировать группу модификаторов</DialogTitle>
+            <DialogTitle>Редактировать модификатор</DialogTitle>
           </DialogHeader>
           <ResourceForm
             fields={formFields}
             onSubmit={handleUpdate}
-            defaultValues={editingGroup || {}}
-            isSubmitting={updateGroup.isPending}
+            defaultValues={editingModifier || {}}
+            isSubmitting={updateModifier.isPending}
           />
         </DialogContent>
       </Dialog>
