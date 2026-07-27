@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { ResourceTable } from '../helpers/ResourceTable';
 import { ResourceForm } from '../helpers/ResourceForm';
 import { useGetProducts, useUpdateProduct, useDeleteProduct, useBulkUpdateProducts, type Product, type ProductBulkUpdate } from '../api/product';
-import { useGetCategories } from '../api/category';
+import { useAllCategories } from '../api/category';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
@@ -293,8 +293,7 @@ export default function ProductsPage() {
 
   const { data: productsData, isLoading } = useGetProducts({ params });
 
-  const categoriesParams: Record<string, any> = {};
-  const { data: categoriesData } = useGetCategories({ params: categoriesParams });
+  const { data: categories } = useAllCategories();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
   const bulkUpdate = useBulkUpdateProducts();
@@ -312,7 +311,7 @@ export default function ProductsPage() {
 
   const products = productsData?.results || [];
   const totalCount = productsData?.count || 0;
-  const categories = categoriesData?.results || [];
+  const allCategories = categories || [];
 
   const handleFieldChange = (id: number, field: keyof Product, value: any) => {
     setEditedData(prev => {
@@ -503,9 +502,9 @@ export default function ProductsPage() {
           disabled={editMode}
         >
           <option value="">Все категории</option>
-          {categories.map((cat: any) => (
+          {allCategories.map((cat: any) => (
             <option key={cat.id} value={cat.id}>
-              {cat.name_ru}
+              {cat.name_ru}{!cat.is_active ? ' (Неактивна)' : ''}
             </option>
           ))}
         </select>

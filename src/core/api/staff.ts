@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createResourceApiHooks } from '../helpers/createResourceApi';
 import api from './api';
 
@@ -56,4 +56,26 @@ export const useSetStaffPassword = () => {
     const response = await api.post(`${STAFF_URL}${id}/set-password/`, { password });
     return response.data;
   };
+};
+
+export const useAllStaff = () => {
+  return useQuery({
+    queryKey: ['staff', 'all'],
+    queryFn: async () => {
+      let page = 1;
+      let allResults: Staff[] = [];
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await api.get<StaffResponse>(STAFF_URL, {
+          params: { page },
+        });
+        allResults = [...allResults, ...response.data.results];
+        hasMore = response.data.next !== null;
+        page++;
+      }
+
+      return allResults;
+    },
+  });
 };

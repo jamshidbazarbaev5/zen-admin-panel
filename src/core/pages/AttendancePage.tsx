@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGetAttendanceSessions, type AttendanceSession } from '../api/attendance';
-import { useGetStaff } from '../api/staff';
+import { useAllStaff } from '../api/staff';
 import { ResourceTable } from '../helpers/ResourceTable';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,7 +27,7 @@ export default function AttendancePage() {
   if (filters.date_to) params.date_to = filters.date_to;
 
   const { data: sessionsData, isLoading } = useGetAttendanceSessions({ params });
-  const { data: staffData } = useGetStaff();
+  const { data: staff } = useAllStaff();
 
   const sessions = sessionsData?.results || [];
   const totalCount = sessionsData?.count || 0;
@@ -159,9 +159,9 @@ export default function AttendancePage() {
               className="mt-1 flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm text-foreground"
             >
               <option value="">{t('attendance.allStaff')}</option>
-              {staffData?.results.map((staff) => (
-                <option key={staff.id} value={staff.id!.toString()}>
-                  {staff.name}
+              {staff?.map((s) => (
+                <option key={s.id} value={s.id!.toString()}>
+                  {s.name}{!s.is_active ? ` (${t('staff.inactive')})` : ''}
                 </option>
               ))}
             </select>

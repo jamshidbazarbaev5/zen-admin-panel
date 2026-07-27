@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Key } from 'lucide-react';
-import { useGetStaff, useCreateStaff, useUpdateStaff, useDeleteStaff, useSetStaffPassword, type Staff } from '../api/staff';
+import { useAllStaff, useCreateStaff, useUpdateStaff, useDeleteStaff, useSetStaffPassword, type Staff } from '../api/staff';
 import { ResourceTable } from '../helpers/ResourceTable';
 import { ResourceForm } from '../helpers/ResourceForm';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,6 @@ import { DeleteConfirmationModal } from '../components/modals/DeleteConfirmation
 
 export default function StaffPage() {
   const { t } = useTranslation();
-  const [currentPage, setCurrentPage] = useState(1);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -22,14 +21,11 @@ export default function StaffPage() {
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [newPassword, setNewPassword] = useState('');
 
-  const { data: staffData, isLoading } = useGetStaff({ params: { page: currentPage } });
+  const { data: staff, isLoading } = useAllStaff();
   const createStaff = useCreateStaff();
   const updateStaff = useUpdateStaff();
   const deleteStaff = useDeleteStaff();
   const setStaffPassword = useSetStaffPassword();
-
-  const staff = staffData?.results || [];
-  const totalCount = staffData?.count || 0;
 
   const columns = [
     {
@@ -120,6 +116,7 @@ export default function StaffPage() {
     updateStaff.mutate(
       {
         id: editingStaff.id,
+        hikvision_id: parseInt(data.hikvision_id),
         name: data.name,
         position: data.position,
         is_active: data.is_active !== false,
@@ -218,7 +215,7 @@ export default function StaffPage() {
     },
   ];
 
-  const editFormFields = formFields.filter(field => field.name !== 'password' && field.name !== 'hikvision_id');
+  const editFormFields = formFields.filter(field => field.name !== 'password');
 
   return (
     <div className="container mx-auto py-6">
@@ -236,10 +233,6 @@ export default function StaffPage() {
           const staffMember = staff.find(s => s.id === id);
           if (staffMember) setDeletingStaff(staffMember);
         }}
-        totalCount={totalCount}
-        pageSize={20}
-        currentPage={currentPage}
-        onPageChange={setCurrentPage}
         actions={(row: Staff) => (
           <Button
             variant="ghost"

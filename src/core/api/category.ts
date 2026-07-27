@@ -1,5 +1,5 @@
 import { createResourceApiHooks } from '../helpers/createResourceApi';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from './api';
 
 export interface Category {
@@ -49,6 +49,28 @@ export const useBulkUpdateCategories = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+    },
+  });
+};
+
+export const useAllCategories = () => {
+  return useQuery({
+    queryKey: ['categories', 'all'],
+    queryFn: async () => {
+      let page = 1;
+      let allResults: Category[] = [];
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await api.get<CategoryResponse>(CATEGORY_URL, {
+          params: { page, page_size: 100 },
+        });
+        allResults = [...allResults, ...response.data.results];
+        hasMore = response.data.next !== null;
+        page++;
+      }
+
+      return allResults;
     },
   });
 };
