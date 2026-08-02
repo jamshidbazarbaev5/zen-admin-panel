@@ -58,7 +58,14 @@ export default function RegistrationGiftPage() {
   const handleUpdate = async (data: any) => {
     try {
       setSaving(true);
-      const response = await registrationGiftApi.update(data);
+      
+      // Convert empty string to null for the API
+      const payload = {
+        ...data,
+        expiry_hours: data.expiry_hours === '' ? null : (data.expiry_hours ? Number(data.expiry_hours) : null),
+      };
+
+      const response = await registrationGiftApi.update(payload);
       setSettings(response.data);
       toast.success('Настройки успешно сохранены!');
       setIsDialogOpen(false);
