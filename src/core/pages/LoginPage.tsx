@@ -25,7 +25,7 @@ export default function LoginPage() {
 
     try {
       const response = await loginMutation.mutateAsync({
-        phone_number: username,
+        username: username,
         password,
       });
       login(response.access, response.user);

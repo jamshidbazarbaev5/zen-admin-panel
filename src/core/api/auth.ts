@@ -4,7 +4,7 @@ import { useErrorStore, parseErrorMessage } from '../store/errorStore'
 
 // Types
 interface LoginCredentials {
-  phone_number: string;
+  username: string;
   password: string;
 }
 
@@ -12,11 +12,13 @@ export interface User {
   id: number;
   username: string;
   is_superuser: boolean;
+  role: 'admin' | 'staff';
+  staff_name: string | null;
+  staff_position: string | null;
+  
+  // Legacy fields kept as optional to avoid breaking existing UI
   name?: string;
   phone_number?: string;
-  role?: string;
-  staff_name?: string;
-  staff_position?: string;
   has_active_shift?: boolean;
   is_mobile_user?: boolean;
   can_view_quantity?: boolean;
@@ -38,7 +40,6 @@ const getBaseURL = (): string => {
 };
 const TOKEN_ENDPOINT = 'auth/login/';
 const REFRESH_ENDPOINT = 'auth/refresh/';
-const VERIFY_ENDPOINT = 'auth/verify/';
 const ME_ENDPOINT = 'auth/me/';
 
 // Local storage keys
@@ -83,7 +84,7 @@ export { getAccessToken };
 // Auth functions
 export const login = async (credentials: LoginCredentials): Promise<TokenResponse> => {
   const response = await authApi.post<TokenResponse>(TOKEN_ENDPOINT, {
-    username: credentials.phone_number,
+    username: credentials.username,
     password: credentials.password,
   });
   setTokens(response.data.access, response.data.refresh);
@@ -99,14 +100,6 @@ export const refreshToken = async (): Promise<string> => {
   return response.data.access;
 };
 
-export const verifyToken = async (token: string): Promise<boolean> => {
-  try {
-    await authApi.post(VERIFY_ENDPOINT, { token });
-    return true;
-  } catch (error) {
-    return false;
-  }
-};
 
 export const logout = (): void => {
   clearTokens();
@@ -151,14 +144,6 @@ export const useLogout = () => {
   });
 };
 
-export const useVerifyToken = (token: string) => {
-  return useQuery({
-    queryKey: ['verifyToken', token],
-    queryFn: () => verifyToken(token),
-    enabled: !!token,
-    retry: false,
-  });
-};
 
 export const useGetCurrentUser = () => {
   return useQuery({

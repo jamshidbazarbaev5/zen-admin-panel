@@ -26,7 +26,11 @@ import BranchesPage from './core/pages/BranchesPage';
 import PolicyPage from './core/pages/PolicyPage';
 import PolicyAcceptancesPage from './core/pages/PolicyAcceptancesPage';
 import ModifiersPage from './core/pages/ModifiersPage';
-// import SettingsPage from './core/pages/SettingsPage';
+import VoucherProductsPage from './core/pages/VoucherProductsPage';
+import VouchersPage from './core/pages/VouchersPage';
+import RegistrationGiftPage from './core/pages/RegistrationGiftPage';
+import WinbackProgramsPage from './core/pages/WinbackProgramsPage';
+import WinbackGrantsPage from './core/pages/WinbackGrantsPage';
 import { Toaster } from 'sonner';
 import './App.css';
 
@@ -157,6 +161,46 @@ function App() {
                   element={
                     <AdminRoute>
                       <CashbackTiersPage />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/voucher-products"
+                  element={
+                    <AdminRoute>
+                      <VoucherProductsPage />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/vouchers"
+                  element={
+                    <AdminRoute>
+                      <VouchersPage />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/registration-gift"
+                  element={
+                    <AdminRoute>
+                      <RegistrationGiftPage />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/winback-programs"
+                  element={
+                    <AdminRoute>
+                      <WinbackProgramsPage />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/winback-grants"
+                  element={
+                    <AdminRoute>
+                      <WinbackGrantsPage />
                     </AdminRoute>
                   }
                 />

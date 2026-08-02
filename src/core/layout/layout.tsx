@@ -183,9 +183,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       href: "/payments",
     },
     {
+      id: "marketing",
       icon: Award,
-      label: "Уровни кэшбэка",
-      href: "/cashback-tiers",
+      label: "Маркетинг",
+      submenu: [
+        { icon: Award, label: "Уровни кэшбэка", href: "/cashback-tiers" },
+        { icon: ShoppingBag, label: "Товары-ваучеры", href: "/voucher-products" },
+        { icon: CreditCard, label: "Ваучеры", href: "/vouchers" },
+        { icon: Users, label: "Приветственный ваучер", href: "/registration-gift" },
+        { icon: Radio, label: "Win-back программы", href: "/winback-programs" },
+        { icon: ClipboardList, label: "Выдачи Win-back", href: "/winback-grants" },
+      ]
     },
     {
       icon: Users,
