@@ -7,6 +7,7 @@ export interface Voucher {
   purchaser_phone: string;
   redeemed_by_name: string | null;
   status_display: string;
+  voucher_kind: string;
   source: string;
   face_value: string;
   sale_price: string;

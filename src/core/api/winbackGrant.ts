@@ -2,11 +2,18 @@ import { createResourceApiHooks } from '../helpers/createResourceApi';
 
 export interface WinbackGrant {
   id: number;
-  program: number;
-  customer: number;
+  program_name: string;
+  customer_name: string;
+  customer_phone: string;
+  voucher_code: string;
+  voucher_status: string;
   step_order: number;
+  last_order_at_snapshot: string;
+  granted_at: string;
+  program: number;
+  step: number;
+  customer: number;
   voucher: number;
-  created_at: string;
 }
 
 export interface WinbackGrantResponse {

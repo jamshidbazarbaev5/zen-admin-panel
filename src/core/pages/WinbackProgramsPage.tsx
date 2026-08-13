@@ -208,7 +208,7 @@ export default function WinbackProgramsPage() {
                     <div key={field.id} className="p-4 border rounded-lg bg-muted/20 relative flex gap-4">
                       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                          <Label>Дней без заказов</Label>
+                          <Label>{index === 0 ? 'Дней без заказов' : 'Дней после предыдущего подарка'}</Label>
                           <Input 
                             type="number"
                             {...form.register(`steps.${index}.trigger_after_days` as const, { required: true })}

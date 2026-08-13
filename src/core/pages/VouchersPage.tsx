@@ -26,6 +26,18 @@ const columns = [
     accessorKey: 'product_name',
   },
   {
+    header: 'Тип',
+    accessorKey: 'voucher_kind',
+    cell: (row: Voucher) => {
+      switch (row.voucher_kind) {
+        case 'purchased': return <span className="text-blue-600 dark:text-blue-400">Куплен</span>;
+        case 'gift_received': return <span className="text-purple-600 dark:text-purple-400">Подарок (получен)</span>;
+        case 'gift_from_us': return <span className="text-emerald-600 dark:text-emerald-400">От заведения</span>;
+        default: return row.voucher_kind;
+      }
+    }
+  },
+  {
     header: 'Номинал',
     accessorKey: 'face_value',
     cell: (row: Voucher) => `${parseFloat(row.face_value).toFixed(2)} сум`,

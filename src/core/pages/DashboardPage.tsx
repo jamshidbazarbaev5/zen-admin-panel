@@ -50,6 +50,12 @@ interface DashboardData {
   customers: { total: number; new_in_range: number };
 }
 
+interface AverageCheckData {
+  range: { from: string; to: string; days: number };
+  overall: { avg_check: string; order_count: number };
+  by_tier: { tier_name: string; avg_check: string; order_count: number; revenue: string }[];
+}
+
 // --- Animation ---
 const bento = {
   hidden: { opacity: 0 },
@@ -364,6 +370,50 @@ function TopProducts({ products }: { products: DashboardData['top_products'] }) 
   );
 }
 
+function AvgCheckByTier({ data }: { data: AverageCheckData | null }) {
+  if (!data) return null;
+  const tiers = data.by_tier || [];
+  
+  if (tiers.length === 0) {
+    return (
+      <div className="flex h-full min-h-[120px] flex-col items-center justify-center text-sm text-muted-foreground">
+        <ShoppingCart className="mb-2 h-5 w-5 opacity-40" />
+        Нет данных
+      </div>
+    );
+  }
+
+  const maxCheck = Math.max(...tiers.map(t => Number(t.avg_check) || 0), 1);
+
+  return (
+    <div className="space-y-3 mt-4">
+      {tiers.map((t, i) => {
+        const val = Number(t.avg_check) || 0;
+        const tierName = t.tier_name === '—' ? 'Без уровня' : t.tier_name;
+        return (
+          <div key={i}>
+            <div className="mb-1 flex items-center justify-between text-xs">
+              <span className="truncate font-medium text-foreground">{tierName}</span>
+              <div className="text-right">
+                <span className="tabular-nums text-foreground font-semibold">{fmt(val)} сум</span>
+                <span className="text-[10px] text-muted-foreground ml-1">({t.order_count} зак.)</span>
+              </div>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${(val / maxCheck) * 100}%` }}
+                transition={{ delay: 0.3 + i * 0.08, duration: 0.6, ease: 'easeOut' }}
+                className="h-full rounded-full bg-emerald-500"
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function DateRangePicker({
   range, onChange,
 }: {
@@ -453,20 +503,27 @@ export default function DashboardPage() {
   const { t } = useTranslation();
   const [range, setRange] = useState({ from: todayISO(), to: todayISO() });
   const [data, setData] = useState<DashboardData | null>(null);
+  const [avgCheckData, setAvgCheckData] = useState<AverageCheckData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    api.get('/dashboard/', { params: { from: range.from, to: range.to } })
-      .then((res) => setData(res.data))
+    Promise.all([
+      api.get('/dashboard/', { params: { from: range.from, to: range.to } }),
+      api.get('/dashboard/average-check/', { params: { from: range.from, to: range.to } })
+    ])
+      .then(([resDashboard, resAvgCheck]) => {
+        setData(resDashboard.data);
+        setAvgCheckData(resAvgCheck.data);
+      })
       .catch((err) => console.error('Dashboard fetch failed:', err))
       .finally(() => setLoading(false));
   }, [range.from, range.to]);
 
   const avgOrderValue = useMemo(() => {
-    if (!data || data.revenue.paid_order_count === 0) return 0;
-    return Math.round(Number(data.revenue.gross) / data.revenue.paid_order_count);
-  }, [data]);
+    if (!avgCheckData) return 0;
+    return Math.round(Number(avgCheckData.overall.avg_check || 0));
+  }, [avgCheckData]);
 
   if (loading && !data) {
     return (
@@ -622,17 +679,27 @@ export default function DashboardPage() {
             </div>
           </motion.div>
 
-          {/* --- Avg Order --- */}
+          {/* --- Avg Order by Tier --- */}
           <motion.div
             variants={cell}
-            className="col-span-2 flex flex-col justify-between rounded-2xl border border-border bg-card p-5 lg:col-span-2"
+            className="col-span-4 flex flex-col justify-between rounded-2xl border border-border bg-card p-5 lg:col-span-2"
           >
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             <div>
-              <span className="text-3xl font-bold text-foreground tabular-nums">
-                <AnimatedNumber value={avgOrderValue} />
-              </span>
-              <p className="text-xs text-muted-foreground">Средний чек, сум</p>
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4 text-emerald-500" />
+                  <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
+                    Средний чек
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-2xl font-bold text-foreground tabular-nums">
+                    <AnimatedNumber value={avgOrderValue} />
+                  </span>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Общий</p>
+                </div>
+              </div>
+              <AvgCheckByTier data={avgCheckData} />
             </div>
           </motion.div>
 
