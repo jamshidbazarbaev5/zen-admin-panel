@@ -13,6 +13,8 @@ export interface Customer {
   orders_count: number;
   created_at: string;
   updated_at: string;
+  last_order_at: string | null;
+  current_tier_name: string | null;
 }
 
 export interface CustomerResponse {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ResourceTable } from '../helpers/ResourceTable';
 import { ResourceForm } from '../helpers/ResourceForm';
 import { useGetCustomers, useUpdateCustomer, type Customer } from '../api/customer';
@@ -6,57 +6,14 @@ import {
   useGetBalanceTransactions,
   type BalanceTransactionType,
 } from '../api/balanceTransaction';
+import { useGetCashbackTiers } from '../api/cashbackTier';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
+import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
-
-const columns = [
-  {
-    header: 'Имя',
-    accessorKey: 'name',
-  },
-  {
-    header: 'Телефон',
-    accessorKey: 'phone',
-  },
-  {
-    header: 'Telegram ID',
-    accessorKey: 'telegram_id',
-  },
-  {
-    header: 'Язык',
-    accessorKey: 'lang',
-    cell: (row: Customer) => row.lang.toUpperCase(),
-  },
-  {
-    header: 'Заказов',
-    accessorKey: 'orders_count',
-  },
-  {
-    header: 'Баланс',
-    accessorKey: 'balance',
-    cell: (row: Customer) => `${parseFloat(row.balance).toFixed(2)} сум`,
-  },
-  {
-    header: 'Депозит',
-    accessorKey: 'deposit_balance',
-    cell: (row: Customer) => `${parseFloat(row.deposit_balance).toFixed(2)} сум`,
-  },
-  {
-    header: 'Потрачено',
-    accessorKey: 'total_spent',
-    cell: (row: Customer) => `${parseFloat(row.total_spent).toFixed(2)} сум`,
-  },
-  {
-    header: 'Статус',
-    accessorKey: 'is_active',
-    cell: (row: Customer) => (
-      <span className={`px-2 py-1 rounded text-xs ${row.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-        {row.is_active ? 'Активен' : 'Неактивен'}
-      </span>
-    ),
-  },
-];
+import { Award } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '../api/api';
 
 const TX_TYPE_FILTERS: { value: '' | BalanceTransactionType; label: string }[] = [
   { value: '', label: 'Все' },
@@ -76,6 +33,7 @@ const TX_TYPE_BADGE: Record<string, string> = {
 };
 
 export default function CustomersPage() {
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [isActiveFilter, setIsActiveFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -87,13 +45,20 @@ export default function CustomersPage() {
   const [txTypeFilter, setTxTypeFilter] = useState<BalanceTransactionType | ''>('');
   const [txPage, setTxPage] = useState(1);
 
+  // Promote Tier state
+  const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false);
+  const [customerToPromote, setCustomerToPromote] = useState<Customer | null>(null);
+  const [selectedTierId, setSelectedTierId] = useState<string>('');
+
   const params: Record<string, any> = { page: currentPage };
   if (searchTerm) params.search = searchTerm;
   if (isActiveFilter) params.is_active = isActiveFilter;
 
   const { data: customersData, isLoading } = useGetCustomers({ params });
-
   const updateCustomer = useUpdateCustomer();
+
+  // Load cashback tiers for the dropdown
+  const { data: tiersData } = useGetCashbackTiers({ params: { page_size: 100 } });
 
   const txParams: Record<string, any> = { page: txPage };
   if (selectedCustomer?.id) txParams.customer = selectedCustomer.id;
@@ -102,6 +67,21 @@ export default function CustomersPage() {
   const { data: txData, isLoading: isTxLoading } = useGetBalanceTransactions({
     params: txParams,
     enabled: isTxDialogOpen && !!selectedCustomer?.id,
+  });
+
+  const promoteTierMutation = useMutation({
+    mutationFn: ({ customerId, tierId }: { customerId: number; tierId: number }) => 
+      api.post(`/customers/${customerId}/promote-tier/`, { tier_id: tierId }),
+    onSuccess: () => {
+      toast.success('Запрос на смену уровня кешбэка отправлен');
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      setIsPromoteDialogOpen(false);
+      setCustomerToPromote(null);
+      setSelectedTierId('');
+    },
+    onError: () => {
+      toast.error('Ошибка при смене уровня кешбэка');
+    }
   });
 
   useEffect(() => {
@@ -119,6 +99,79 @@ export default function CustomersPage() {
   const txTotalCount = txData?.count || 0;
   const txPageSize = 20;
   const txTotalPages = Math.max(1, Math.ceil(txTotalCount / txPageSize));
+
+  const columns = useMemo(() => [
+    {
+      header: 'Имя',
+      accessorKey: 'name',
+    },
+    {
+      header: 'Телефон',
+      accessorKey: 'phone',
+    },
+    {
+      header: 'Язык',
+      accessorKey: 'lang',
+      cell: (row: Customer) => row.lang.toUpperCase(),
+    },
+    {
+      header: 'Заказов',
+      accessorKey: 'orders_count',
+    },
+    {
+      header: 'Последний заказ',
+      accessorKey: 'last_order_at',
+      cell: (row: Customer) => row.last_order_at ? new Date(row.last_order_at).toLocaleString('ru-RU') : '—',
+    },
+    {
+      header: 'Уровень',
+      accessorKey: 'current_tier_name',
+      cell: (row: Customer) => (
+        <div className="flex items-center gap-2">
+          <span>{row.current_tier_name || '—'}</span>
+          {row.id && (
+            <button
+              type="button"
+              className="p-1 hover:bg-muted rounded"
+              title="Изменить уровень кешбэка"
+              onClick={(e) => {
+                e.stopPropagation();
+                setCustomerToPromote(row);
+                setSelectedTierId('');
+                setIsPromoteDialogOpen(true);
+              }}
+            >
+              <Award className="h-4 w-4 text-emerald-600" />
+            </button>
+          )}
+        </div>
+      ),
+    },
+    {
+      header: 'Баланс',
+      accessorKey: 'balance',
+      cell: (row: Customer) => `${parseFloat(row.balance).toFixed(2)} сум`,
+    },
+    {
+      header: 'Депозит',
+      accessorKey: 'deposit_balance',
+      cell: (row: Customer) => `${parseFloat(row.deposit_balance).toFixed(2)} сум`,
+    },
+    {
+      header: 'Потрачено',
+      accessorKey: 'total_spent',
+      cell: (row: Customer) => `${parseFloat(row.total_spent).toFixed(2)} сум`,
+    },
+    {
+      header: 'Статус',
+      accessorKey: 'is_active',
+      cell: (row: Customer) => (
+        <span className={`px-2 py-1 rounded text-xs ${row.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          {row.is_active ? 'Активен' : 'Неактивен'}
+        </span>
+      ),
+    },
+  ], []);
 
   const handleEdit = (customer: Customer) => {
     setEditingCustomer(customer);
@@ -163,12 +216,6 @@ export default function CustomersPage() {
     {
       name: 'phone',
       label: 'Телефон',
-      type: 'text' as const,
-      readOnly: true,
-    },
-    {
-      name: 'telegram_id',
-      label: 'Telegram ID',
       type: 'text' as const,
       readOnly: true,
     },
@@ -228,6 +275,43 @@ export default function CustomersPage() {
               defaultValues={editingCustomer || {}}
               isSubmitting={updateCustomer.isPending}
             />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isPromoteDialogOpen} onOpenChange={setIsPromoteDialogOpen}>
+        <DialogContent className="max-w-md bg-card">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Изменить уровень кешбэка</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="text-sm text-muted-foreground">
+              Клиент: <span className="font-medium text-foreground">{customerToPromote?.name} ({customerToPromote?.phone})</span>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Новый уровень (Cashback Tier)</label>
+              <select 
+                value={selectedTierId} 
+                onChange={(e) => setSelectedTierId(e.target.value)} 
+                className="w-full p-2 border rounded bg-background"
+              >
+                <option value="">-- Выберите уровень --</option>
+                {tiersData?.results.map(tier => (
+                  <option key={tier.id} value={tier.id}>
+                    {tier.name} ({parseFloat(tier.percent)}%)
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="pt-4 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsPromoteDialogOpen(false)}>Отмена</Button>
+              <Button 
+                disabled={!selectedTierId || promoteTierMutation.isPending} 
+                onClick={() => promoteTierMutation.mutate({ customerId: customerToPromote!.id!, tierId: Number(selectedTierId) })}
+              >
+                {promoteTierMutation.isPending ? 'Загрузка...' : 'Применить'}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
