@@ -36,6 +36,9 @@ export default function CustomersPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [isActiveFilter, setIsActiveFilter] = useState<string>('');
+  const [inactiveDaysMin, setInactiveDaysMin] = useState<string>('');
+  const [inactiveDaysMax, setInactiveDaysMax] = useState<string>('');
+  const [tierFilter, setTierFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -53,6 +56,9 @@ export default function CustomersPage() {
   const params: Record<string, any> = { page: currentPage };
   if (searchTerm) params.search = searchTerm;
   if (isActiveFilter) params.is_active = isActiveFilter;
+  if (inactiveDaysMin) params.inactive_days_min = Number(inactiveDaysMin);
+  if (inactiveDaysMax) params.inactive_days_max = Number(inactiveDaysMax);
+  if (tierFilter !== '') params.tier = tierFilter;
 
   const { data: customersData, isLoading } = useGetCustomers({ params });
   const updateCustomer = useUpdateCustomer();
@@ -86,7 +92,7 @@ export default function CustomersPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, isActiveFilter]);
+  }, [searchTerm, isActiveFilter, inactiveDaysMin, inactiveDaysMax, tierFilter]);
 
   useEffect(() => {
     setTxPage(1);
@@ -232,23 +238,73 @@ export default function CustomersPage() {
         <h1 className="text-2xl font-bold">Клиенты</h1>
       </div>
 
-      <div className="mb-4 flex gap-4">
-        <Input
-          type="text"
-          placeholder="Поиск по имени, телефону..."
-          className="flex-1"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <select
-          className="p-2 border rounded"
-          value={isActiveFilter}
-          onChange={(e) => setIsActiveFilter(e.target.value)}
-        >
-          <option value="">Все статусы</option>
-          <option value="true">Активные</option>
-          <option value="false">Неактивные</option>
-        </select>
+      <div className="mb-4 space-y-3">
+        <div className="flex gap-4">
+          <Input
+            type="text"
+            placeholder="Поиск по имени, телефону, Telegram ID..."
+            className="flex-1"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <select
+            className="p-2 border rounded bg-background"
+            value={isActiveFilter}
+            onChange={(e) => setIsActiveFilter(e.target.value)}
+          >
+            <option value="">Все статусы</option>
+            <option value="true">Активные</option>
+            <option value="false">Неактивные</option>
+          </select>
+          <select
+            className="p-2 border rounded bg-background"
+            value={tierFilter}
+            onChange={(e) => setTierFilter(e.target.value)}
+          >
+            <option value="">Все уровни</option>
+            <option value="Bronze">Bronze</option>
+            <option value="Silver">Silver</option>
+            <option value="Gold">Gold</option>
+            <option value="—">Без уровня (—)</option>
+          </select>
+        </div>
+        <div className="flex gap-4 items-end">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-muted-foreground whitespace-nowrap">Неактивен от:</label>
+            <Input
+              type="number"
+              min="1"
+              placeholder="дней"
+              className="w-28"
+              value={inactiveDaysMin}
+              onChange={(e) => setInactiveDaysMin(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-muted-foreground whitespace-nowrap">до:</label>
+            <Input
+              type="number"
+              min="1"
+              placeholder="дней"
+              className="w-28"
+              value={inactiveDaysMax}
+              onChange={(e) => setInactiveDaysMax(e.target.value)}
+            />
+          </div>
+          {(inactiveDaysMin || inactiveDaysMax || tierFilter !== '') && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setInactiveDaysMin('');
+                setInactiveDaysMax('');
+                setTierFilter('');
+              }}
+            >
+              Сбросить фильтры
+            </Button>
+          )}
+        </div>
       </div>
 
       <ResourceTable

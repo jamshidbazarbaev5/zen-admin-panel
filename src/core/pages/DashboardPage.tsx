@@ -47,7 +47,18 @@ interface DashboardData {
   };
   tiers: { name: string; customer_count: number }[];
   top_products: { name?: string; qty?: number; quantity?: number; revenue?: string }[];
-  customers: { total: number; new_in_range: number };
+  customers: {
+    total: number;
+    new_in_range: number;
+    inactive_buckets: {
+      active_0_6_days: number;
+      '7_13_days': number;
+      '14_29_days': number;
+      '30_59_days': number;
+      '60_plus_days': number;
+      never_ordered: number;
+    };
+  };
 }
 
 interface AverageCheckData {
@@ -414,6 +425,55 @@ function AvgCheckByTier({ data }: { data: AverageCheckData | null }) {
   );
 }
 
+function InactivityDistribution({
+  buckets,
+}: {
+  buckets: DashboardData['customers']['inactive_buckets'];
+}) {
+  const segments = [
+    { key: 'active_0_6_days', label: 'Активны (0–6 дн.)', color: '#10b981' },
+    { key: '7_13_days', label: '7–13 дн.', color: '#84cc16' },
+    { key: '14_29_days', label: '14–29 дн.', color: '#eab308' },
+    { key: '30_59_days', label: '30–59 дн.', color: '#f97316' },
+    { key: '60_plus_days', label: '60+ дн.', color: '#ef4444' },
+    { key: 'never_ordered', label: 'Не заказывали', color: '#94a3b8' },
+  ] as const;
+
+  const vals = segments.map((s) => ({ ...s, value: buckets[s.key] || 0 }));
+  const total = vals.reduce((s, v) => s + v.value, 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex h-4 w-full overflow-hidden rounded-full bg-muted">
+        {vals.map((v, i) => {
+          const pct = total === 0 ? 0 : (v.value / total) * 100;
+          return pct > 0 ? (
+            <motion.div
+              key={v.key}
+              initial={{ width: 0 }}
+              animate={{ width: `${pct}%` }}
+              transition={{ delay: 0.3 + i * 0.06, duration: 0.6, ease: 'easeOut' }}
+              className="h-full first:rounded-l-full last:rounded-r-full"
+              style={{ background: v.color }}
+            />
+          ) : null;
+        })}
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {vals.map((v) => (
+          <div key={v.key} className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: v.color }} />
+            <div>
+              <span className="text-sm font-semibold text-foreground tabular-nums">{v.value}</span>
+              <p className="text-[10px] text-muted-foreground leading-tight">{v.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function DateRangePicker({
   range, onChange,
 }: {
@@ -677,6 +737,20 @@ export default function DashboardPage() {
               </span>
               <p className="text-xs text-muted-foreground">Всего клиентов</p>
             </div>
+          </motion.div>
+
+          {/* --- Customer Inactivity Distribution --- */}
+          <motion.div
+            variants={cell}
+            className="col-span-4 rounded-2xl border border-border bg-card p-5 lg:col-span-4"
+          >
+            <div className="mb-4 flex items-center gap-2">
+              <Users className="h-4 w-4 text-orange-500" />
+              <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
+                Активность клиентов
+              </p>
+            </div>
+            <InactivityDistribution buckets={data.customers.inactive_buckets} />
           </motion.div>
 
           {/* --- Avg Order by Tier --- */}

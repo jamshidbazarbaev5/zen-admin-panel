@@ -14,6 +14,8 @@ export interface WinbackGrant {
   step: number;
   customer: number;
   voucher: number;
+  returned?: boolean;
+  customer_id?: number;
 }
 
 export interface WinbackGrantResponse {
