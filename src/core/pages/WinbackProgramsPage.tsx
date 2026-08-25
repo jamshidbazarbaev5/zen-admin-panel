@@ -98,6 +98,7 @@ export default function WinbackProgramsPage() {
 
   const handleCreate = (data: WinbackProgram) => {
     data.steps = data.steps.map((step, idx) => ({
+      id: step.id,
       order: idx + 1,
       trigger_after_days: Number(step.trigger_after_days),
       amount: step.amount.toString(),
@@ -120,6 +121,7 @@ export default function WinbackProgramsPage() {
     if (!editingProgram?.id) return;
     
     data.steps = data.steps.map((step, idx) => ({
+      id: step.id,
       order: idx + 1,
       trigger_after_days: Number(step.trigger_after_days),
       amount: step.amount.toString(),

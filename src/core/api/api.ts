@@ -54,23 +54,29 @@ api.interceptors.response.use(
   async (error: AxiosError<any>) => {
     const originalRequest = error.config;
 
-    // If error is 401 and not a retry
-    if (
-      error.response?.status === 401 &&
-      originalRequest &&
-      !originalRequest._retry
-    ) {
-      originalRequest._retry = true;
+    // If error is 401
+    if (error.response?.status === 401) {
+      if (originalRequest && !originalRequest._retry) {
+        originalRequest._retry = true;
 
-      try {
-        const newToken = await refreshToken();
-        if (originalRequest.headers) {
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        try {
+          const newToken = await refreshToken();
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          }
+          return api(originalRequest);
+        } catch (refreshError) {
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          window.location.href = "/login";
+          return Promise.reject(refreshError);
         }
-        return api(originalRequest);
-      } catch (refreshError) {
+      } else {
+        // Either no original request, or we already retried and failed
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
         window.location.href = "/login";
-        return Promise.reject(refreshError);
+        return Promise.reject(error);
       }
     }
 

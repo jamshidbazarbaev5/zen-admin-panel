@@ -3,6 +3,7 @@ import { createResourceApiHooks } from '../helpers/createResourceApi';
 import api from './api';
 
 export interface WinbackStep {
+  id?: number;
   order: number;
   trigger_after_days: number;
   amount: string;
