@@ -439,8 +439,8 @@ export default function WinbackProgramsPage() {
                           <Users size={14} />
                           {step.total_grants} выдач
                         </span>
-                        <span className={`font-medium ${step.return_rate > 0.3 ? 'text-green-600' : step.return_rate > 0.1 ? 'text-yellow-600' : 'text-red-600'}`}>
-                          {Math.round(step.return_rate * 100)}% возврат
+                        <span className={`font-medium ${step.return_rate > 30 ? 'text-green-600' : step.return_rate > 10 ? 'text-yellow-600' : 'text-red-600'}`}>
+                          {Math.round(step.return_rate)}% возврат
                         </span>
                         <ChevronRight size={16} />
                       </div>
@@ -471,10 +471,10 @@ export default function WinbackProgramsPage() {
                       <div>
                         <div className="flex justify-between text-muted-foreground mb-1">
                           <span>Вернулись</span>
-                          <span>{Math.round(step.return_rate * 100)}%</span>
+                          <span>{Math.round(step.return_rate)}%</span>
                         </div>
                         <Progress
-                          value={step.return_rate * 100}
+                          value={step.return_rate}
                           className="h-1.5 [&>div]:bg-green-500"
                         />
                       </div>
