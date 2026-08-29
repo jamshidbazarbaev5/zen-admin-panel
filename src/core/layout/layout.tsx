@@ -21,6 +21,7 @@ import {
   MessageSquare,
   FileText,
   Sliders,
+  AlertTriangle,
   User as UserIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -181,6 +182,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       icon: CreditCard,
       label: "Платежи",
       href: "/payments",
+    },
+    {
+      icon: AlertTriangle,
+      label: "Проблемные платежи",
+      href: "/failed-payments",
     },
     {
       id: "marketing",

@@ -31,6 +31,7 @@ import VouchersPage from './core/pages/VouchersPage';
 import RegistrationGiftPage from './core/pages/RegistrationGiftPage';
 import WinbackProgramsPage from './core/pages/WinbackProgramsPage';
 import WinbackGrantsPage from './core/pages/WinbackGrantsPage';
+import FailedPaymentsPage from './core/pages/FailedPaymentsPage';
 import { Toaster } from 'sonner';
 import './App.css';
 
@@ -305,6 +306,14 @@ function App() {
                   element={
                     <AdminRoute>
                       <PolicyAcceptancesPage />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/failed-payments"
+                  element={
+                    <AdminRoute>
+                      <FailedPaymentsPage />
                     </AdminRoute>
                   }
                 />
