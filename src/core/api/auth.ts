@@ -58,6 +58,10 @@ const authApi = axios.create({
 authApi.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Don't show error modal for 401 — the main api interceptor handles logout
+    if (error.response?.status === 401) {
+      return Promise.reject(error);
+    }
     const errorMessage = parseErrorMessage(error.response?.data);
     useErrorStore.getState().setError(errorMessage);
     return Promise.reject(error);

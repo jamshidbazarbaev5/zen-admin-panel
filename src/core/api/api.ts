@@ -68,14 +68,14 @@ api.interceptors.response.use(
         } catch (refreshError) {
           localStorage.removeItem("access_token");
           localStorage.removeItem("refresh_token");
-          window.location.href = "/login";
+          window.location.href = "/admin-panel/login";
           return Promise.reject(refreshError);
         }
       } else {
         // Either no original request, or we already retried and failed
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
-        window.location.href = "/login";
+        window.location.href = "/admin-panel/login";
         return Promise.reject(error);
       }
     }

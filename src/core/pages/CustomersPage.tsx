@@ -169,6 +169,20 @@ export default function CustomersPage() {
       cell: (row: Customer) => `${parseFloat(row.total_spent).toFixed(2)} сум`,
     },
     {
+      header: 'Пол',
+      accessorKey: 'gender',
+      cell: (row: Customer) => {
+        if (row.gender === 'male') return <span className="text-blue-600">Мужской</span>;
+        if (row.gender === 'female') return <span className="text-pink-600">Женский</span>;
+        return '—';
+      },
+    },
+    {
+      header: 'Дата рождения',
+      accessorKey: 'date_of_birth',
+      cell: (row: Customer) => row.date_of_birth ? new Date(row.date_of_birth).toLocaleDateString('ru-RU') : '—',
+    },
+    {
       header: 'Статус',
       accessorKey: 'is_active',
       cell: (row: Customer) => (

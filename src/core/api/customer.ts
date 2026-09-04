@@ -15,6 +15,8 @@ export interface Customer {
   updated_at: string;
   last_order_at: string | null;
   current_tier_name: string | null;
+  date_of_birth: string | null;
+  gender: string;
 }
 
 export interface CustomerResponse {
